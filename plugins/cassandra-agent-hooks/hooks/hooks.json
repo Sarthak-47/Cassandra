@@ -1,0 +1,29 @@
+{
+  "description": "Cassandra plugin hooks — ensure the local Cassandra runtime is available for initialized agents.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cassandra init hook ensure",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cassandra init hook ensure",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}
