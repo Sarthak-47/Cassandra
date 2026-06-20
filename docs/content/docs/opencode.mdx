@@ -1,0 +1,161 @@
+---
+title: OpenCode Integration
+description: Route OpenCode traffic through Cassandra for token compression, MCP tools, and cached model access. One command to wrap, one to unwrap.
+---
+
+Use `cassandra wrap opencode` to route OpenCode LLM traffic through the Cassandra proxy with a single command. The wrapper starts or reuses the proxy, writes OpenCode config, injects Cassandra MCP tools, adds RTK context filtering, and launches OpenCode with the generated config.
+
+The `cassandra-opencode` npm package also exports a native OpenCode plugin. The plugin can be used directly from OpenCode config when you want in-process transport interception plus the Cassandra retrieve tool.
+
+## Quick Start
+
+```bash
+cassandra wrap opencode
+```
+
+When you are done:
+
+```bash
+cassandra unwrap opencode
+```
+
+## What `wrap opencode` Does
+
+| Step | What happens |
+|---|---|
+| Proxy | Starts the Cassandra proxy unless `--no-proxy` is set |
+| Provider config | Writes a `cassandra` provider using `@ai-sdk/openai-compatible` into `opencode.json` and `OPENCODE_CONFIG_CONTENT`, pointing at `http://127.0.0.1:<port>/v1` |
+| Runtime env | Sets `OPENCODE_CONFIG_CONTENT` so OpenCode reads provider, model, plugin, and local MCP config at launch |
+| Provider compatibility | Leaves `OPENAI_BASE_URL` and `ANTHROPIC_BASE_URL` untouched so OpenCode `/connect` providers keep their own routing |
+| Context tool | Injects RTK or `lean-ctx` instructions into `~/.config/opencode/AGENTS.md` and project `AGENTS.md` |
+| MCP setup | Registers Cassandra MCP tools through a local stdio server: `cassandra_compress`, `cassandra_retrieve`, and `cassandra_stats` |
+| Serena MCP | Optionally registers Serena code graph tools. Use `--no-serena` to skip it |
+| Backup | Snapshots `opencode.json` to `opencode.json.cassandra-backup` before changing it |
+| Launch | Starts the `opencode` binary with the generated config |
+
+## Options
+
+```bash
+cassandra wrap opencode \
+  --port 8787 \            # Proxy port (default: 8787)
+  --no-rtk \               # Skip RTK context tool injection
+  --no-mcp \               # Skip Cassandra MCP registration
+  --no-serena \            # Skip Serena code graph MCP
+  --code-graph \           # Include code graph in context
+  --no-proxy \             # Use an existing proxy instead of starting one
+  --learn \                # Enable memory and live learning
+  --memory \               # Enable persistent memory
+  --backend anthropic \    # Backend: anthropic, anyllm, litellm-<provider>
+  --anyllm-provider ... \  # AnyLLM provider selection
+  --region ... \           # Provider region
+  -- <opencode args>       # Arguments passed to the opencode binary
+```
+
+## Provider Model Mapping
+
+The generated `cassandra` provider exposes these models through the proxy:
+
+| Provider model | Upstream model |
+|---|---|
+| `cassandra/claude-sonnet-4-6` | Claude Sonnet 4.6, 200K context, 16K output |
+| `cassandra/claude-opus-4-6` | Claude Opus 4.6, 200K context, 16K output |
+| `cassandra/claude-haiku-4-5-20251001` | Claude Haiku 4.5, 200K context, 8K output |
+| `cassandra/gpt-4o` | GPT-4o, 128K context, 16K output |
+| `cassandra/gpt-4.1` | GPT-4.1, 1M context, 32K output |
+
+The default model is `cassandra/claude-sonnet-4-6`. Change it in `opencode.json` or in the generated `OPENCODE_CONFIG_CONTENT` payload.
+
+## Environment Variables
+
+| Variable | Description |
+|---|---|
+| `OPENCODE_CONFIG_CONTENT` | JSON payload with provider, model, plugin, and optional local MCP config injected by `wrap` |
+| `CASSANDRA_PROXY_URL` | Proxy URL passed to the native `cassandra-opencode` plugin. Defaults to `http://127.0.0.1:8787` inside the plugin |
+| `CASSANDRA_CONTEXT_TOOL` | Set to `lean-ctx` to use lean-ctx instead of RTK |
+
+## Failure Learning
+
+`cassandra learn` supports OpenCode as a scan target. It reads past sessions from `~/.local/share/opencode/opencode.db` and writes corrections to your project's `AGENTS.md`.
+
+```bash
+cassandra learn --agent opencode --apply
+```
+
+See [Failure Learning](/docs/failure-learning) for details on the learn system.
+
+## Persistent Installs
+
+`cassandra install` supports OpenCode as a target for persistent provider wiring:
+
+```bash
+cassandra install apply --preset persistent-service --scope provider --providers manual --target opencode
+```
+
+This writes the Cassandra provider into `~/.config/opencode/opencode.json` and keeps the proxy running on port 8787.
+
+Provider-only installs do not write Cassandra MCP config. MCP tools are added by `cassandra wrap opencode` unless `--no-mcp` is set.
+
+## Native OpenCode Plugin
+
+The `cassandra-opencode` package exports `CassandraPlugin` for direct OpenCode plugin registration. The plugin installs Cassandra transport interception inside OpenCode, exposes the `cassandra_retrieve` tool, and publishes Cassandra metadata through the OpenCode plugin output env.
+
+Example:
+
+```ts
+import { CassandraPlugin } from "cassandra-opencode";
+
+export default async function plugin(input) {
+  return CassandraPlugin(input, {
+    proxyUrl: process.env.CASSANDRA_PROXY_URL ?? "http://127.0.0.1:8787",
+  });
+}
+```
+
+Use this plugin when OpenCode should intercept provider traffic in-process. Use `cassandra wrap opencode` when you want the CLI to manage the proxy, config injection, local MCP registration, backups, and unwrap behavior.
+
+## Programmatic Config Helpers
+
+The package also exports helpers for custom integrations:
+
+```ts
+import {
+  buildOpencodeConfigContent,
+  createCassandraProvider,
+  createCassandraRetrieveTool,
+} from "cassandra-opencode";
+
+const provider = createCassandraProvider({ proxyPort: 8787 });
+const config = buildOpencodeConfigContent({
+  proxyPort: 8787,
+  defaultModel: "claude-sonnet-4-6",
+});
+const retrieve = createCassandraRetrieveTool({
+  proxyBaseUrl: "http://127.0.0.1:8787",
+});
+```
+
+## How It Works Under The Hood
+
+1. **Config injection**. The wrapper writes a `provider.cassandra` block into `opencode.json`. The provider uses `@ai-sdk/openai-compatible`, which OpenCode supports natively. Model mappings route requests through `http://127.0.0.1:<port>/v1`.
+2. **Runtime config**. `OPENCODE_CONFIG_CONTENT` is set as an env var containing the full provider, model, plugin, and local MCP JSON. OpenCode reads it at startup and merges it with on-disk config.
+3. **MCP tools**. Cassandra registers `cassandra_compress`, `cassandra_retrieve`, and `cassandra_stats` through a local stdio MCP server unless `--no-mcp` is set.
+4. **Native plugin path**. `CassandraPlugin` installs Cassandra transport interception and uses `CASSANDRA_PROXY_URL` or `http://127.0.0.1:8787` to reach the proxy.
+5. **Unwrap**. `cassandra unwrap opencode` restores `opencode.json` from the pre-wrap backup when present, strips Cassandra marker blocks when no backup exists, and unregisters Cassandra MCP servers.
+
+## Troubleshooting
+
+**OpenCode does not use the cassandra provider.**
+
+Check that `OPENCODE_CONFIG_CONTENT` is set and contains the `provider.cassandra` block. The wrap command prints the env vars it sets.
+
+**The native plugin cannot reach Cassandra.**
+
+Set `CASSANDRA_PROXY_URL` to the running proxy URL, for example `http://127.0.0.1:8787`.
+
+**Provider not found after unwrap.**
+
+If unwrap left the provider configured, run `cassandra unwrap opencode` again, or manually restore from `~/.config/opencode/opencode.json.cassandra-backup`.
+
+**Proxy port conflict.**
+
+Use `--port` to select a specific port, or let the proxy auto-select an available one.
