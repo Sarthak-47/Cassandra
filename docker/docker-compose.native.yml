@@ -1,0 +1,44 @@
+services:
+  cli:
+    image: ${CASSANDRA_IMAGE:-ghcr.io/Sarthak-47/cassandra:latest}
+    entrypoint: ["cassandra"]
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    environment:
+      HOME: /tmp/cassandra-home
+      # Canonical Cassandra filesystem contract (issue #175). Forwarded into
+      # the container so the proxy resolves state/config to the bind-mounted
+      # /tmp/cassandra-home/.cassandra path. CASSANDRA_WORKSPACE (above) remains
+      # the Docker bind-mount source and is intentionally different.
+      CASSANDRA_WORKSPACE_DIR: /tmp/cassandra-home/.cassandra
+      CASSANDRA_CONFIG_DIR: /tmp/cassandra-home/.cassandra/config
+    volumes:
+      - ${CASSANDRA_WORKSPACE:-.}:/workspace
+      - ${CASSANDRA_HOST_HOME:?set CASSANDRA_HOST_HOME}/.cassandra:/tmp/cassandra-home/.cassandra
+      - ${CASSANDRA_HOST_HOME:?set CASSANDRA_HOST_HOME}/.claude:/tmp/cassandra-home/.claude
+      - ${CASSANDRA_HOST_HOME:?set CASSANDRA_HOST_HOME}/.codex:/tmp/cassandra-home/.codex
+      - ${CASSANDRA_HOST_HOME:?set CASSANDRA_HOST_HOME}/.gemini:/tmp/cassandra-home/.gemini
+    command: ["--help"]
+
+  proxy:
+    image: ${CASSANDRA_IMAGE:-ghcr.io/Sarthak-47/cassandra:latest}
+    entrypoint: ["cassandra", "proxy"]
+    working_dir: /workspace
+    restart: unless-stopped
+    environment:
+      HOME: /tmp/cassandra-home
+      CASSANDRA_HOST: 0.0.0.0
+      # Canonical Cassandra filesystem contract (issue #175). See `cli` service
+      # above for rationale.
+      CASSANDRA_WORKSPACE_DIR: /tmp/cassandra-home/.cassandra
+      CASSANDRA_CONFIG_DIR: /tmp/cassandra-home/.cassandra/config
+    ports:
+      - "${CASSANDRA_PORT:-8787}:${CASSANDRA_PORT:-8787}"
+    volumes:
+      - ${CASSANDRA_WORKSPACE:-.}:/workspace
+      - ${CASSANDRA_HOST_HOME:?set CASSANDRA_HOST_HOME}/.cassandra:/tmp/cassandra-home/.cassandra
+      - ${CASSANDRA_HOST_HOME:?set CASSANDRA_HOST_HOME}/.claude:/tmp/cassandra-home/.claude
+      - ${CASSANDRA_HOST_HOME:?set CASSANDRA_HOST_HOME}/.codex:/tmp/cassandra-home/.codex
+      - ${CASSANDRA_HOST_HOME:?set CASSANDRA_HOST_HOME}/.gemini:/tmp/cassandra-home/.gemini
+    command: ["--host", "0.0.0.0", "--port", "${CASSANDRA_PORT:-8787}"]
