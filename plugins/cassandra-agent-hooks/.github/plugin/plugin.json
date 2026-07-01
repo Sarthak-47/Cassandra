@@ -1,15 +1,15 @@
 {
-  "name": "headroom",
+  "name": "cassandra",
   "version": "0.22.3",
-  "description": "Headroom startup hooks for Claude Code and GitHub Copilot CLI.",
+  "description": "Cassandra startup hooks for Claude Code and GitHub Copilot CLI.",
   "author": {
-    "name": "Headroom Contributors",
-    "url": "https://github.com/chopratejas/headroom"
+    "name": "Cassandra Contributors",
+    "url": "https://github.com/Sarthak-47/cassandra"
   },
-  "homepage": "https://github.com/chopratejas/headroom",
-  "repository": "https://github.com/chopratejas/headroom",
+  "homepage": "https://github.com/Sarthak-47/cassandra",
+  "repository": "https://github.com/Sarthak-47/cassandra",
   "keywords": [
-    "headroom",
+    "cassandra",
     "hooks",
     "claude-code",
     "copilot-cli"

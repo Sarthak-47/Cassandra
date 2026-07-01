@@ -1,26 +1,26 @@
 {
-  "name": "headroom-marketplace",
+  "name": "cassandra-marketplace",
   "owner": {
-    "name": "Headroom Contributors"
+    "name": "Cassandra Contributors"
   },
   "metadata": {
-    "description": "Headroom marketplace for Claude Code and GitHub Copilot CLI plugins.",
+    "description": "Cassandra marketplace for Claude Code and GitHub Copilot CLI plugins.",
     "version": "0.22.3"
   },
   "plugins": [
     {
-      "name": "headroom",
-      "source": "./plugins/headroom-agent-hooks",
-      "description": "Headroom startup hooks for Claude Code and GitHub Copilot CLI.",
+      "name": "cassandra",
+      "source": "./plugins/cassandra-agent-hooks",
+      "description": "Cassandra startup hooks for Claude Code and GitHub Copilot CLI.",
       "version": "0.22.3",
       "author": {
-        "name": "Headroom Contributors",
-        "url": "https://github.com/chopratejas/headroom"
+        "name": "Cassandra Contributors",
+        "url": "https://github.com/Sarthak-47/cassandra"
       },
-      "homepage": "https://github.com/chopratejas/headroom",
-      "repository": "https://github.com/chopratejas/headroom",
+      "homepage": "https://github.com/Sarthak-47/cassandra",
+      "repository": "https://github.com/Sarthak-47/cassandra",
       "keywords": [
-        "headroom",
+        "cassandra",
         "hooks",
         "claude-code",
         "copilot-cli"

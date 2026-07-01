@@ -1,9 +1,9 @@
-name: Headroom e2e setup
+name: Cassandra e2e setup
 description: >-
   Checkout-agnostic setup shared by native e2e workflows (init, install, wrap).
-  Installs Python, optionally installs the Rust toolchain + editable headroom
-  package, and (optionally) drops PATH shims for the local ``headroom`` CLI and
-  target binaries so ``headroom init -g <target>`` can detect tools that aren't
+  Installs Python, optionally installs the Rust toolchain + editable cassandra
+  package, and (optionally) drops PATH shims for the local ``cassandra`` CLI and
+  target binaries so ``cassandra init -g <target>`` can detect tools that aren't
   actually installed on the runner.
 inputs:
   python-version:
@@ -13,9 +13,9 @@ inputs:
   install-mode:
     description: >-
       Install strategy. ``editable-proxy`` builds the local package with
-      ``pip install -e .[proxy]`` and verifies ``headroom._core``.
+      ``pip install -e .[proxy]`` and verifies ``cassandra._core``.
       ``deps-only-proxy`` installs the base + ``[proxy]`` dependency set from
-      pyproject.toml, then drops a local ``headroom`` launcher that imports
+      pyproject.toml, then drops a local ``cassandra`` launcher that imports
       from the checkout without building the package; use this for CLI tests
       that do not exercise the Rust extension.
     required: false
@@ -87,18 +87,18 @@ runs:
           fi
         fi
 
-    - name: Install headroom (editable, with proxy extras — builds Rust extension)
+    - name: Install cassandra (editable, with proxy extras — builds Rust extension)
       if: ${{ inputs.install-mode == 'editable-proxy' }}
       shell: bash
       run: |
         python -m pip install --upgrade pip
-        # ``headroom/cli/__init__.py`` eagerly imports ``proxy.server`` (via
+        # ``cassandra/cli/__init__.py`` eagerly imports ``proxy.server`` (via
         # ``cli/proxy.py``), which requires ``fastapi`` even for ``init``.
         # Install with the ``[proxy]`` extras to match the Docker e2e image.
         pip install -e ".[proxy]"
-        python -c "from headroom._core import DiffCompressor; print('headroom._core OK:', DiffCompressor)"
+        python -c "from cassandra._core import DiffCompressor; print('cassandra._core OK:', DiffCompressor)"
 
-    - name: Install base + proxy dependencies without building headroom
+    - name: Install base + proxy dependencies without building cassandra
       if: ${{ inputs.install-mode == 'deps-only-proxy' }}
       shell: bash
       run: |
@@ -116,31 +116,31 @@ runs:
             [sys.executable, "-m", "pip", "install", "--retries", "10", "--timeout", "60", *requirements]
         )
         PY
-        python -c "from headroom.cli.main import main; print('headroom CLI OK:', main)"
+        python -c "from cassandra.cli.main import main; print('cassandra CLI OK:', main)"
 
-    - name: Drop local headroom launcher (POSIX)
+    - name: Drop local cassandra launcher (POSIX)
       if: ${{ inputs.install-mode == 'deps-only-proxy' && runner.os != 'Windows' }}
       shell: bash
       run: |
-        shim_dir="${RUNNER_TEMP}/headroom-local-bin"
+        shim_dir="${RUNNER_TEMP}/cassandra-local-bin"
         mkdir -p "$shim_dir"
-        cat > "$shim_dir/headroom" <<'SH'
+        cat > "$shim_dir/cassandra" <<'SH'
         #!/usr/bin/env bash
-        exec python -m headroom.cli "$@"
+        exec python -m cassandra.cli "$@"
         SH
-        chmod +x "$shim_dir/headroom"
+        chmod +x "$shim_dir/cassandra"
         echo "$shim_dir" >> "$GITHUB_PATH"
 
-    - name: Drop local headroom launcher (Windows)
+    - name: Drop local cassandra launcher (Windows)
       if: ${{ inputs.install-mode == 'deps-only-proxy' && runner.os == 'Windows' }}
       shell: pwsh
       run: |
-        $shimDir = Join-Path $env:RUNNER_TEMP "headroom-local-bin"
+        $shimDir = Join-Path $env:RUNNER_TEMP "cassandra-local-bin"
         New-Item -ItemType Directory -Force -Path $shimDir | Out-Null
         @"
         @echo off
-        python -m headroom.cli %*
-        "@ | Out-File -FilePath (Join-Path $shimDir "headroom.cmd") -Encoding ascii
+        python -m cassandra.cli %*
+        "@ | Out-File -FilePath (Join-Path $shimDir "cassandra.cmd") -Encoding ascii
         Add-Content -Path $env:GITHUB_PATH -Value $shimDir
 
     - name: Drop shim (POSIX)
@@ -148,7 +148,7 @@ runs:
       id: shim-posix
       shell: bash
       run: |
-        shim_dir="${RUNNER_TEMP}/headroom-e2e-shims"
+        shim_dir="${RUNNER_TEMP}/cassandra-e2e-shims"
         bash e2e/_lib/make_shim.sh "${{ inputs.shim-target }}" "$shim_dir"
         echo "$shim_dir" >> "$GITHUB_PATH"
         echo "shim-dir=$shim_dir" >> "$GITHUB_OUTPUT"
@@ -158,7 +158,7 @@ runs:
       id: shim-windows
       shell: pwsh
       run: |
-        $shimDir = Join-Path $env:RUNNER_TEMP "headroom-e2e-shims"
+        $shimDir = Join-Path $env:RUNNER_TEMP "cassandra-e2e-shims"
         & pwsh -File e2e/_lib/make_shim.ps1 -Name "${{ inputs.shim-target }}" -Dir $shimDir
         Add-Content -Path $env:GITHUB_PATH -Value $shimDir
         "shim-dir=$shimDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
