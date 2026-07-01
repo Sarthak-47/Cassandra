@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use axum::body::{to_bytes, Body};
-use axum::extract::{ConnectInfo, DefaultBodyLimit, State, WebSocketUpgrade};
+use axum::extract::{ConnectInfo, DefaultBodyLimit, FromRequestParts, State, WebSocketUpgrade};
 use axum::http::{HeaderMap, HeaderName, Request, Response, StatusCode, Uri};
 use axum::response::IntoResponse;
 use axum::routing::{any, get, post};
@@ -298,16 +298,29 @@ pub fn build_app(state: AppState) -> Router {
 async fn catch_all(
     State(state): State<AppState>,
     ConnectInfo(client_addr): ConnectInfo<SocketAddr>,
-    ws: Option<WebSocketUpgrade>,
     req: Request<Body>,
 ) -> Response<Body> {
     if is_websocket_upgrade(req.headers()) {
-        if let Some(ws) = ws {
-            return ws_handler(ws, state, client_addr, req).await;
+        // axum 0.8 dropped the blanket `Option<T>: FromRequestParts` impl, so
+        // WebSocketUpgrade can no longer be an `Option<WebSocketUpgrade>`
+        // extractor argument. Extract it manually against the request parts
+        // instead, preserving the original fall-through-to-HTTP behavior.
+        let (mut parts, body) = req.into_parts();
+        match WebSocketUpgrade::from_request_parts(&mut parts, &state).await {
+            Ok(ws) => {
+                let req = Request::from_parts(parts, body);
+                return ws_handler(ws, state, client_addr, req).await;
+            }
+            Err(_) => {
+                // Header says websocket but axum couldn't extract it (likely
+                // missing Sec-WebSocket-Key) — fall through to HTTP
+                // forwarding which will surface the upstream error.
+                let req = Request::from_parts(parts, body);
+                return forward_http(state, client_addr, req)
+                    .await
+                    .unwrap_or_else(|e| e.into_response());
+            }
         }
-        // Header says websocket but axum didn't extract it (likely missing
-        // Sec-WebSocket-Key) — fall through to HTTP forwarding which will
-        // surface the upstream error.
     }
     forward_http(state, client_addr, req)
         .await
