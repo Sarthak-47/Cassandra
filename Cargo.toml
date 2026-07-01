@@ -38,3 +38,13 @@ gcp_auth = "0.12"
 [profile.release]
 lto = "thin"
 codegen-units = 1
+
+# CI-only profile: skip the release-profile LTO/codegen-units=1 cost (this
+# workspace's heavy deps — fastembed/ort, tokenizers — make a full release
+# build too slow for a 30-minute CI budget) while still disabling debug
+# assertions so the wheel behaves like a real build for smoke/e2e tests.
+[profile.ci]
+inherits = "dev"
+opt-level = 1
+debug = false
+incremental = false
