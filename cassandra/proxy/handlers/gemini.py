@@ -16,6 +16,10 @@ if TYPE_CHECKING:
     from fastapi import Request
     from fastapi.responses import JSONResponse, Response, StreamingResponse
 
+    from cassandra.proxy.handlers._typing import ProxyHandlerHost
+else:
+    ProxyHandlerHost = object
+
 from cassandra.copilot_auth import build_copilot_upstream_url
 from cassandra.proxy.auth_mode import classify_client
 from cassandra.proxy.compression_decision import CompressionDecision
@@ -28,7 +32,7 @@ DEFAULT_CLOUDCODE_API_URL = "https://cloudcode-pa.googleapis.com"
 ANTIGRAVITY_DAILY_API_URL = "https://daily-cloudcode-pa.sandbox.googleapis.com"
 
 
-class GeminiHandlerMixin:
+class GeminiHandlerMixin(ProxyHandlerHost):
     """Mixin providing Gemini API handler methods for CassandraProxy."""
 
     def _is_cloudcode_antigravity_request(

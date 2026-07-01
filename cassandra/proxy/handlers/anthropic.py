@@ -21,6 +21,10 @@ if TYPE_CHECKING:
     from fastapi import Request
     from fastapi.responses import Response, StreamingResponse
 
+    from cassandra.proxy.handlers._typing import ProxyHandlerHost
+else:
+    ProxyHandlerHost = object
+
 import httpx
 
 from cassandra.agent_savings import proxy_pipeline_kwargs
@@ -38,7 +42,7 @@ from cassandra.proxy.outcome import RequestOutcome
 logger = logging.getLogger("cassandra.proxy")
 
 
-class AnthropicHandlerMixin:
+class AnthropicHandlerMixin(ProxyHandlerHost):
     """Mixin providing Anthropic API handler methods for CassandraProxy."""
 
     @staticmethod
@@ -909,7 +913,7 @@ class AnthropicHandlerMixin:
                 _hook_ctx = None
 
             # Apply optimization
-            transforms_applied = []
+            transforms_applied: list[str] = []
             pipeline_timing: dict[str, float] = {}
             waste_signals_dict: dict[str, int] | None = None
             optimized_messages = messages
@@ -1129,12 +1133,15 @@ class AnthropicHandlerMixin:
 
                                 class _DeferredCompressionResult:
                                     messages = working_messages
-                                    transforms_applied = [
+                                    transforms_applied: list[str] = [
                                         "deferred:background_compression"
                                         if accepted
                                         else "deferred:dropped"
                                     ]
-                                    timing = {}
+                                    timing: dict[str, float] = {}
+                                    # Deferred/background compression doesn't run
+                                    # waste-signal detection for this request.
+                                    waste_signals = None
 
                                 result = _DeferredCompressionResult()
                             else:
@@ -1398,7 +1405,12 @@ class AnthropicHandlerMixin:
                             else 0,
                             transforms_applied=transforms_applied,
                             model=model,
-                            user_query=_hook_ctx.user_query if self.config.hooks else "",
+                            # `_hook_ctx` is only non-None when it was built
+                            # above under `self.config.hooks and not
+                            # is_cache_mode(...)` — checking `self.config.hooks`
+                            # alone here missed the cache-mode case, which
+                            # would AttributeError on a None _hook_ctx.
+                            user_query=(_hook_ctx.user_query if _hook_ctx is not None else ""),
                             provider=provider_name,
                         )
                     )
@@ -1443,6 +1455,10 @@ class AnthropicHandlerMixin:
                         )
                         and take_tool_search_hint_slot()
                     ):
+                        # claude_code_tool_search_inactive() returning True
+                        # implies tools carries >=1 definitions (see its
+                        # docstring), so this is always a list here.
+                        assert isinstance(tools, list)
                         logger.warning(
                             "[%s] %s", request_id, format_tool_search_disabled_hint(tools)
                         )

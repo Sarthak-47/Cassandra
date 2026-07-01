@@ -37,12 +37,16 @@ if TYPE_CHECKING:
     from fastapi import Request
     from fastapi.responses import Response, StreamingResponse
 
+    from cassandra.proxy.handlers._typing import ProxyHandlerHost
+else:
+    ProxyHandlerHost = object
+
 logger = logging.getLogger("cassandra.proxy")
 
 LOG_TAG = "bedrock_invoke"
 
 
-class BedrockHandlerMixin:
+class BedrockHandlerMixin(ProxyHandlerHost):
     """Mixin providing the Bedrock InvokeModel passthrough handler."""
 
     def _bedrock_upstream_base(self) -> str | None:
@@ -162,6 +166,9 @@ class BedrockHandlerMixin:
         pipeline_timing: dict[str, float] | None = None
 
         if not bypass:
+            # `bypass` is True whenever `messages` isn't a list (see above),
+            # so reaching here guarantees it — narrows the type for mypy.
+            assert isinstance(messages, list)
             try:
                 context_limit = self.anthropic_provider.get_context_limit(model_id)  # type: ignore[attr-defined]
                 result = await self._run_compression_in_executor(  # type: ignore[attr-defined]

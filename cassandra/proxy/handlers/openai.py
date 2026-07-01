@@ -20,7 +20,7 @@ from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import replace
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import quote, unquote, urlparse
 
 from cassandra.proxy.helpers import (
@@ -40,6 +40,10 @@ from cassandra.proxy.ws_session_registry import (
 if TYPE_CHECKING:
     from fastapi import Request, WebSocket
     from fastapi.responses import JSONResponse, Response, StreamingResponse
+
+    from cassandra.proxy.handlers._typing import ProxyHandlerHost
+else:
+    ProxyHandlerHost = object
 
 import httpx
 
@@ -695,7 +699,7 @@ def _prefers_http1_passthrough(base_url: str) -> bool:
     return host == "chatgpt.com" or host.endswith(".chatgpt.com")
 
 
-class OpenAIHandlerMixin:
+class OpenAIHandlerMixin(ProxyHandlerHost):
     """Mixin providing OpenAI API handler methods for CassandraProxy."""
 
     OPENAI_RESPONSES_ROUTER_MIN_BYTES = 512
@@ -830,7 +834,9 @@ class OpenAIHandlerMixin:
         profile_kwargs = proxy_pipeline_kwargs(getattr(self, "config", None))
         unit_target_ratio = profile_kwargs.get("target_ratio")
         if unit_target_ratio is not None:
-            unit_target_ratio = float(unit_target_ratio)
+            # profile_kwargs is dict[str, object] by design (mixed kwarg
+            # types); target_ratio is numeric by convention.
+            unit_target_ratio = float(unit_target_ratio)  # type: ignore[arg-type]
 
         try:
             tokenizer = self.openai_provider.get_token_counter(model)
@@ -1229,8 +1235,13 @@ class OpenAIHandlerMixin:
         _add_timing("compression_units_router_loop", router_total_started)
 
         apply_started = time.perf_counter()
-        for slot, result, _elapsed_ms in ordered_routed_results:
-            item_idx, slot_ref = slot
+        for routed_slot, result, _elapsed_ms in ordered_routed_results:
+            # Renamed from `slot` — that name is already bound (to a
+            # differently-inferred type) earlier in this function's scope
+            # at the `_compress_routed_unit` call site. ordered_routed_results
+            # is built from a loosely-typed intermediate list, so mypy sees
+            # `object` here rather than the actual (item_idx, slot_ref) tuple.
+            item_idx, slot_ref = cast("tuple[int, Any]", routed_slot)
             router_chain = list(result.router_result.strategy_chain) if result.router_result else []
             for s in router_chain:
                 if s not in strategy_chain_union:
@@ -3369,10 +3380,16 @@ class OpenAIHandlerMixin:
         if tokens_saved > 100:
             try:
                 from cassandra.parser import parse_messages
+                from cassandra.tokenizer import Tokenizer
 
                 _, _, _waste = parse_messages(
                     _responses_input_to_waste_messages(instructions, input_data),
-                    tokenizer,
+                    # `tokenizer` (from tokenizers.registry.get_tokenizer)
+                    # is typed against tokenizers.base.TokenCounter, which
+                    # is missing count_message() in its Protocol surface —
+                    # but every concrete tokenizer subclasses BaseTokenizer,
+                    # which implements it, so this is safe at runtime.
+                    Tokenizer(tokenizer, model),  # type: ignore[arg-type]
                 )
                 if _waste.total() > 0:
                     waste_signals_dict = _waste.to_dict()
@@ -3941,8 +3958,12 @@ class OpenAIHandlerMixin:
                     upstream = await websockets.connect(
                         upstream_url,
                         additional_headers=upstream_headers,
+                        # The `else` branch is a fallback for websockets
+                        # versions without `Subprotocol` (older releases
+                        # took plain strings) — the two branches have
+                        # different element types by design.
                         subprotocols=(
-                            [websockets.Subprotocol(p) for p in client_subprotocols]
+                            [websockets.Subprotocol(p) for p in client_subprotocols]  # type: ignore[arg-type]
                             if client_subprotocols and hasattr(websockets, "Subprotocol")
                             else client_subprotocols or None
                         ),
@@ -4274,6 +4295,12 @@ class OpenAIHandlerMixin:
             ws_memory_decision.apply_to_tags(ws_tags)
             if ws_memory_decision.inject:
                 memory_user_id = _ws_memory_user_id_candidate
+                # `inject` can only be True when memory_handler was passed
+                # to MemoryDecision.decide() above, which only happens in
+                # the `if self.memory_handler and body:` branch — the same
+                # branch that guarantees _ws_memory_user_id_candidate is a
+                # real string, not None.
+                assert memory_user_id is not None
                 try:
                     # Unwrap response.create envelope to access the response body
                     ws_response_body = body.get("response", body)
@@ -4756,7 +4783,7 @@ class OpenAIHandlerMixin:
                                 frame_index=frame_index,
                                 raw_bytes=len(raw_msg.encode("utf-8", errors="replace")),
                                 frame_type=(
-                                    parsed_frame.get("type")
+                                    str(parsed_frame.get("type") or "")
                                     if isinstance(parsed_frame, dict)
                                     else type(parsed_frame).__name__
                                 ),
@@ -5502,7 +5529,7 @@ class OpenAIHandlerMixin:
                         # handler itself was cancelled from outside
                         # (e.g. server shutdown).
                         for t in done:
-                            exc = None
+                            exc: BaseException | None = None
                             # Cancelled tasks raise CancelledError from
                             # .exception(); surface it explicitly so the
                             # downstream ``isinstance(exc, CancelledError)``
@@ -5588,10 +5615,13 @@ class OpenAIHandlerMixin:
                 # WS upgrade failed (HTTP 500 from OpenAI is common).
                 # Fall back to HTTP POST streaming and relay SSE events
                 # back over the client WebSocket transparently.
-                ws_err = ws_last_err or RuntimeError("unknown websocket connect failure")
-                _ws_detail = str(ws_err)
-                if hasattr(ws_err, "response"):
-                    resp_body = getattr(getattr(ws_err, "response", None), "body", b"")
+                # Named ws_fallback_err (not ws_err) — `except Exception as
+                # ws_err:` earlier in this function causes Python (and
+                # mypy) to treat `ws_err` as deleted after that block exits.
+                ws_fallback_err = ws_last_err or RuntimeError("unknown websocket connect failure")
+                _ws_detail = str(ws_fallback_err)
+                if hasattr(ws_fallback_err, "response"):
+                    resp_body = getattr(getattr(ws_fallback_err, "response", None), "body", b"")
                     if resp_body:
                         from cassandra.proxy.helpers import safe_decode_for_logging
 

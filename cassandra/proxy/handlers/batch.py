@@ -14,6 +14,10 @@ if TYPE_CHECKING:
     from fastapi import Request
     from fastapi.responses import Response
 
+    from cassandra.proxy.handlers._typing import ProxyHandlerHost
+else:
+    ProxyHandlerHost = object
+
 from cassandra.proxy.auth_mode import classify_client
 from cassandra.proxy.helpers import extract_tags
 from cassandra.proxy.outcome import RequestOutcome
@@ -21,7 +25,7 @@ from cassandra.proxy.outcome import RequestOutcome
 logger = logging.getLogger("cassandra.proxy")
 
 
-class BatchHandlerMixin:
+class BatchHandlerMixin(ProxyHandlerHost):
     """Mixin providing batch API handler methods for CassandraProxy."""
 
     async def handle_google_batch_create(

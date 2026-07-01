@@ -51,6 +51,7 @@ TerminationCause = Literal[
     "upstream_error",
     "client_error",
     "client_cancel",
+    "compression_refused",
     "response_completed",
     "client_timeout",
     "unknown",

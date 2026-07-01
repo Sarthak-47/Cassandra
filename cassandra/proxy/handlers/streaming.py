@@ -22,6 +22,10 @@ from cassandra.proxy.helpers import (
 if TYPE_CHECKING:
     from fastapi.responses import Response, StreamingResponse
 
+    from cassandra.proxy.handlers._typing import ProxyHandlerHost
+else:
+    ProxyHandlerHost = object
+
 
 import httpx
 
@@ -60,7 +64,7 @@ def _parse_completion_tokens_from_sse_chunk(chunk_bytes: bytes) -> int | None:
     return None
 
 
-class StreamingMixin:
+class StreamingMixin(ProxyHandlerHost):
     """Mixin providing streaming response methods for CassandraProxy."""
 
     _mid_turn_queues: dict[str, asyncio.Queue] = {}
