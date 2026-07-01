@@ -1,0 +1,40 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/cassandra-core",
+    "crates/cassandra-proxy",
+    "crates/cassandra-py",
+    "crates/cassandra-parity",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.82"
+license = "Apache-2.0"
+repository = "https://github.com/Sarthak-47/cassandra"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["raw_value"] }
+bytes = "1"
+thiserror = "2"
+tracing = "0.1"
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+tower = "0.5"
+axum = "0.8"
+tokio = "1"
+pyo3 = { version = "0.29", features = ["abi3-py310"] }
+pyo3-log = "0.13"
+aws-sigv4 = "1"
+aws-config = "1"
+aws-credential-types = "1"
+aws-smithy-runtime-api = "1"
+gcp_auth = "0.12"
+
+# Release builds favor runtime speed over compile time — this workspace ships
+# a proxy binary and a Python extension module, both on the request hot path.
+[profile.release]
+lto = "thin"
+codegen-units = 1
