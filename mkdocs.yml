@@ -1,0 +1,91 @@
+site_name: Cassandra
+site_description: The Context Optimization Layer for LLM Applications
+site_url: https://sarthak-47.github.io/cassandra/
+repo_name: Sarthak-47/cassandra
+repo_url: https://github.com/Sarthak-47/cassandra
+edit_uri: edit/main/wiki/
+
+docs_dir: wiki
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.top
+    - navigation.instant
+    - content.code.copy
+    - content.action.edit
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Quickstart: quickstart.md
+      - Getting Started: getting-started.md
+      - Installation (Docker): docker-install.md
+      - macOS Deployment: macos-deployment.md
+      - Configuration: configuration.md
+  - Core Concepts:
+      - Architecture: ARCHITECTURE.md
+      - Compression: compression.md
+      - Transforms: transforms.md
+      - CCR (Compress-Cache-Retrieve): ccr.md
+      - Memory: memory.md
+      - Shared Context: shared-context.md
+  - Integrations:
+      - Integration Guide: integration-guide.md
+      - LangChain: langchain.md
+      - Agno: agno.md
+      - Strands: strands.md
+      - MCP: mcp.md
+      - TypeScript SDK: typescript-sdk.md
+      - SDK: sdk.md
+      - CLI: cli.md
+      - Proxy: proxy.md
+      - Vertex AI: vertex.md
+  - Reference:
+      - API: api.md
+      - Errors: errors.md
+      - Metrics: metrics.md
+      - Filesystem Contract: filesystem-contract.md
+      - Persistent Installs: persistent-installs.md
+      - Network Diff Capture: network-diff-capture.md
+      - Image Compression: image-compression.md
+      - Text Compression: text-compression.md
+  - Benchmarks & Limitations:
+      - Benchmarks: benchmarks.md
+      - Latency Benchmarks: LATENCY_BENCHMARKS.md
+      - Limitations: LIMITATIONS.md
+  - Troubleshooting: troubleshooting.md
+  - Learn: learn.md

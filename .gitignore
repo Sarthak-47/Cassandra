@@ -2,6 +2,9 @@
 /target/
 crates/*/target/
 
+# mkdocs
+/site/
+
 # Python
 __pycache__/
 *.py[cod]
