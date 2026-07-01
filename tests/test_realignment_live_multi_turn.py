@@ -60,7 +60,9 @@ from tests._dotenv import autouse_apply_env, load_env_overrides  # noqa: E402
 LIVE_CONFIG: dict[str, Any] = {
     # Anthropic — primary model with explicit fallback. The fallback path
     # only triggers if the primary returns 4xx for "model not found".
-    "anthropic_model_primary": os.environ.get("CASSANDRA_LIVE_ANTHROPIC_MODEL", "claude-sonnet-4-5"),
+    "anthropic_model_primary": os.environ.get(
+        "CASSANDRA_LIVE_ANTHROPIC_MODEL", "claude-sonnet-4-5"
+    ),
     "anthropic_model_fallback": "claude-3-5-sonnet-20241022",
     "anthropic_version": "2023-06-01",
     # OpenAI — small + cheap.

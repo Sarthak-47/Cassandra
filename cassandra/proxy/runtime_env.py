@@ -56,9 +56,13 @@ class Knob:
 RUNTIME_ENV_KNOBS: tuple[Knob, ...] = (
     Knob("CASSANDRA_OUTPUT_SHAPER", "bool", "Master switch for output-token shaping."),
     Knob(
-        "CASSANDRA_VERBOSITY_LEVEL", "int", "Verbosity steering level 0-4 (unset = learned/default)."
+        "CASSANDRA_VERBOSITY_LEVEL",
+        "int",
+        "Verbosity steering level 0-4 (unset = learned/default).",
     ),
-    Knob("CASSANDRA_EFFORT_ROUTER", "bool", "Lower effort on mechanical tool-result continuations."),
+    Knob(
+        "CASSANDRA_EFFORT_ROUTER", "bool", "Lower effort on mechanical tool-result continuations."
+    ),
     Knob("CASSANDRA_MECHANICAL_EFFORT", "str", "Effort value used on mechanical continuations."),
     Knob("CASSANDRA_VERBOSITY_AUTOTUNE", "bool", "Use the AIMD verbosity controller state."),
     Knob(

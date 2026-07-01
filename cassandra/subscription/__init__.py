@@ -24,8 +24,8 @@ from cassandra.subscription.copilot_quota import (
     parse_copilot_quota,
 )
 from cassandra.subscription.models import (
-    ExtraUsage,
     CassandraContribution,
+    ExtraUsage,
     RateLimitWindow,
     SubscriptionSnapshot,
     SubscriptionState,

@@ -38,8 +38,6 @@ Example:
 
 # Re-export from langchain subpackage for backwards compatibility
 from .langchain import (
-    # Retrievers
-    CompressionMetrics,
     # Core
     CassandraCallbackHandler,
     # Memory
@@ -51,6 +49,8 @@ from .langchain import (
     CassandraRunnable,
     # Agents
     CassandraToolWrapper,
+    # Retrievers
+    CompressionMetrics,
     OptimizationMetrics,
     # Streaming
     StreamingMetrics,

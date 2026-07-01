@@ -105,9 +105,9 @@ def test_proxy_provider_runtime_routes_model_metadata_and_passthrough() -> None:
         runtime.select_passthrough_base_url({"x-goog-api-key": "test"})
         == runtime.api_targets.gemini
     )
-    assert runtime.select_passthrough_base_url({"api-key": "azure", "x-cassandra-base-url": ""}) == (
-        runtime.api_targets.openai
-    )
+    assert runtime.select_passthrough_base_url(
+        {"api-key": "azure", "x-cassandra-base-url": ""}
+    ) == (runtime.api_targets.openai)
 
 
 def test_create_proxy_backend_handles_missing_litellm_backend(caplog) -> None:

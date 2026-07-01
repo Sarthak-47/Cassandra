@@ -155,7 +155,11 @@ def resolve_verbosity_level(settings: OutputShaperSettings) -> tuple[int, str]:
     except Exception:
         return settings.verbosity_level, "default"
 
-    autotune = runtime_env.getenv("CASSANDRA_VERBOSITY_AUTOTUNE", "").lower() in ("1", "true", "yes")
+    autotune = runtime_env.getenv("CASSANDRA_VERBOSITY_AUTOTUNE", "").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
     if autotune:
         ctrl_path = ws / "verbosity_controller.json"
         if ctrl_path.exists():

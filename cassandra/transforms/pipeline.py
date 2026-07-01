@@ -12,8 +12,8 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from ..config import (
     CacheAlignerConfig,
-    DiffArtifact,
     CassandraConfig,
+    DiffArtifact,
     TransformDiff,
     TransformResult,
     WasteSignals,
@@ -103,7 +103,9 @@ class TransformPipeline:
         # instead of re-running (and re-failing) transforms on every
         # request. Threshold <= 0 disables the breaker.
         self._breaker_threshold = _breaker_env("CASSANDRA_PIPELINE_BREAKER_THRESHOLD", 3, int)
-        self._breaker_cooldown_s = _breaker_env("CASSANDRA_PIPELINE_BREAKER_COOLDOWN_S", 60.0, float)
+        self._breaker_cooldown_s = _breaker_env(
+            "CASSANDRA_PIPELINE_BREAKER_COOLDOWN_S", 60.0, float
+        )
         self._breaker_lock = threading.Lock()
         self._breaker_failures = 0
         self._breaker_open_until = 0.0

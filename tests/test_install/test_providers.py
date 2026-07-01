@@ -193,7 +193,9 @@ def test_revert_codex_provider_scope_ignores_files_without_managed_block(
 
 def test_apply_openclaw_provider_scope_uses_manifest_port(monkeypatch, tmp_path: Path) -> None:
     recorded: list[list[str]] = []
-    monkeypatch.setattr("cassandra.providers.openclaw.install.shutil_which", lambda name: "openclaw")
+    monkeypatch.setattr(
+        "cassandra.providers.openclaw.install.shutil_which", lambda name: "openclaw"
+    )
     monkeypatch.setattr(
         "cassandra.providers.openclaw.install.resolve_cassandra_command",
         lambda: ["cassandra"],
@@ -215,7 +217,9 @@ def test_apply_openclaw_provider_scope_uses_manifest_port(monkeypatch, tmp_path:
 
     apply_openclaw_provider_scope(manifest)
 
-    assert recorded == [["cassandra", "wrap", "openclaw", "--no-auto-start", "--proxy-port", "9999"]]
+    assert recorded == [
+        ["cassandra", "wrap", "openclaw", "--no-auto-start", "--proxy-port", "9999"]
+    ]
 
 
 def test_openclaw_apply_provider_scope_requires_installed_binary(
@@ -272,7 +276,9 @@ def test_openclaw_revert_provider_scope_skips_without_binary(monkeypatch, tmp_pa
 
 def test_openclaw_revert_provider_scope_invokes_unwrap(monkeypatch, tmp_path: Path) -> None:
     recorded: list[list[str]] = []
-    monkeypatch.setattr("cassandra.providers.openclaw.install.shutil_which", lambda name: "openclaw")
+    monkeypatch.setattr(
+        "cassandra.providers.openclaw.install.shutil_which", lambda name: "openclaw"
+    )
     monkeypatch.setattr(
         "cassandra.providers.openclaw.install.resolve_cassandra_command",
         lambda: ["cassandra"],

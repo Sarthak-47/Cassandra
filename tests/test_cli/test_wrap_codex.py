@@ -1055,7 +1055,9 @@ def test_wrap_codex_memory_prepare_only_uses_local_db_without_persisting_it(
         return 0
 
     with patch("cassandra.cli.wrap._ensure_rtk_binary", return_value=None):
-        with patch("cassandra.memory.sync._build_sync_backend", side_effect=fake_build_sync_backend):
+        with patch(
+            "cassandra.memory.sync._build_sync_backend", side_effect=fake_build_sync_backend
+        ):
             with patch("cassandra.memory.sync.sync_import", side_effect=fake_sync_import):
                 with patch(
                     "cassandra.memory.sync_adapters.claude_code.ClaudeCodeAdapter",

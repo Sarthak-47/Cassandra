@@ -323,7 +323,9 @@ class CassandraStrandsModel(Model):  # type: ignore[misc]
 
         # Get model context limit
         model_limit = (
-            self._cassandra_provider.get_context_limit(model) if self._cassandra_provider else 128000
+            self._cassandra_provider.get_context_limit(model)
+            if self._cassandra_provider
+            else 128000
         )
 
         try:

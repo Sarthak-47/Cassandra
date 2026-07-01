@@ -57,7 +57,9 @@ logger = logging.getLogger(__name__)
 # Dedicated Codex usage endpoint for ChatGPT OAuth/session auth. Overridable
 # for tests / self-hosted gateways via env.
 CODEX_USAGE_URL = (
-    os.environ.get("CASSANDRA_CODEX_USAGE_URL", "https://chatgpt.com/backend-api/wham/usage").strip()
+    os.environ.get(
+        "CASSANDRA_CODEX_USAGE_URL", "https://chatgpt.com/backend-api/wham/usage"
+    ).strip()
     or "https://chatgpt.com/backend-api/wham/usage"
 )
 

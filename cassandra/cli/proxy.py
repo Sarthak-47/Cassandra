@@ -1253,9 +1253,7 @@ Memory (Multi-Provider):
             "                Disable: CASSANDRA_TELEMETRY=off or cassandra proxy --no-telemetry"
         )
     else:
-        telemetry_line = (
-            "  Telemetry:    DISABLED (opt in: CASSANDRA_TELEMETRY=on or cassandra proxy --telemetry)"
-        )
+        telemetry_line = "  Telemetry:    DISABLED (opt in: CASSANDRA_TELEMETRY=on or cassandra proxy --telemetry)"
 
     # Discover proxy extensions (third-party packages registered via the
     # `cassandra.proxy_extension` entry-point group). Surfaced in the banner

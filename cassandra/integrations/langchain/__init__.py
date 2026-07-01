@@ -70,7 +70,7 @@ from .providers import (
 )
 
 # Retriever integration
-from .retriever import CompressionMetrics, CassandraDocumentCompressor
+from .retriever import CassandraDocumentCompressor, CompressionMetrics
 
 # Streaming metrics
 from .streaming import (

@@ -7,8 +7,8 @@ import sys
 
 sys.path.insert(0, ".")
 
-from examples.context_compression_demo import build_retriever_chunks
 from cassandra import compress
+from examples.context_compression_demo import build_retriever_chunks
 
 
 def main():

@@ -472,7 +472,9 @@ class CassandraAgnoModel(Model):  # type: ignore[misc]
         # Skip optimization for messages with extended thinking blocks
         # Thinking blocks must be passed through unchanged for Claude's API
         if self._has_thinking_blocks(openai_messages):
-            logger.info("Skipping Cassandra optimization: messages contain extended thinking blocks")
+            logger.info(
+                "Skipping Cassandra optimization: messages contain extended thinking blocks"
+            )
             # Estimate token count (rough approximation)
             tokens_estimate = sum(len(str(m.get("content", ""))) // 4 for m in openai_messages)
             metrics = OptimizationMetrics(
@@ -494,7 +496,9 @@ class CassandraAgnoModel(Model):  # type: ignore[misc]
 
         # Get model context limit
         model_limit = (
-            self._cassandra_provider.get_context_limit(model) if self._cassandra_provider else 128000
+            self._cassandra_provider.get_context_limit(model)
+            if self._cassandra_provider
+            else 128000
         )
 
         try:

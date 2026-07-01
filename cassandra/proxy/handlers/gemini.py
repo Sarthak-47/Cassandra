@@ -942,7 +942,9 @@ class GeminiHandlerMixin:
         # PR-A5 (P5-49): strip internal x-cassandra-* before forwarding upstream.
         from cassandra.proxy.helpers import _strip_internal_headers, log_outbound_headers
 
-        _pre_strip_count_gem_stream = sum(1 for k in headers if k.lower().startswith("x-cassandra-"))
+        _pre_strip_count_gem_stream = sum(
+            1 for k in headers if k.lower().startswith("x-cassandra-")
+        )
         headers = _strip_internal_headers(headers)
         log_outbound_headers(
             forwarder="gemini_stream_generate_content",

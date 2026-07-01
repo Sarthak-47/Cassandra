@@ -718,7 +718,9 @@ def run_full_benchmark(api_key: str = None) -> dict:
     token_savings = (
         (1 - total_cassandra_tokens / total_baseline_tokens) if total_baseline_tokens > 0 else 0
     )
-    cost_savings = (1 - total_cassandra_cost / total_baseline_cost) if total_baseline_cost > 0 else 0
+    cost_savings = (
+        (1 - total_cassandra_cost / total_baseline_cost) if total_baseline_cost > 0 else 0
+    )
 
     print(
         f"{'Total Input Tokens':<25} {total_baseline_tokens:>15,} {total_cassandra_tokens:>15,} {token_savings:>14.1%}"

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from cassandra.exceptions import (
     CacheError,
+    CassandraError,
     CompressionError,
     ConfigurationError,
-    CassandraError,
     ProviderError,
     StorageError,
     TokenizationError,

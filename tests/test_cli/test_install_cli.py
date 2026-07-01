@@ -357,7 +357,8 @@ def test_install_remove_continues_when_runtime_teardown_errors(monkeypatch) -> N
         lambda manifest: (_ for _ in ()).throw(RuntimeError("boom")),
     )
     monkeypatch.setattr(
-        "cassandra.cli.install.remove_supervisor", lambda manifest: calls.append("remove_supervisor")
+        "cassandra.cli.install.remove_supervisor",
+        lambda manifest: calls.append("remove_supervisor"),
     )
     monkeypatch.setattr(
         "cassandra.cli.install.revert_mutations", lambda manifest: calls.append("revert")

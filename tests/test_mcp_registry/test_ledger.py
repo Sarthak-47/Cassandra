@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from cassandra.mcp_registry.base import ServerSpec
 from cassandra.mcp_registry.ledger import (
-    clear_install,
     cassandra_installed_matching,
+    clear_install,
     record_install,
     spec_fingerprint,
 )
@@ -32,7 +32,8 @@ def test_ledger_rejects_changed_spec(tmp_path):
     record_install("claude", _spec(), path=ledger)
 
     assert (
-        cassandra_installed_matching("claude", _spec(command="/custom/serena"), path=ledger) is False
+        cassandra_installed_matching("claude", _spec(command="/custom/serena"), path=ledger)
+        is False
     )
 
 

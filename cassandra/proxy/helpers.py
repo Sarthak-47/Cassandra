@@ -598,7 +598,9 @@ _RTK_GAIN_SCOPE_GLOBAL = "global"
 _RTK_GAIN_SCOPE_PROJECT = "project"
 _RTK_GAIN_SCOPES = {_RTK_GAIN_SCOPE_GLOBAL, _RTK_GAIN_SCOPE_PROJECT}
 
-RTK_STATS_CACHE_TTL_SECONDS = float(os.environ.get("CASSANDRA_CONTEXT_TOOL_STATS_TTL_SECONDS", "60"))
+RTK_STATS_CACHE_TTL_SECONDS = float(
+    os.environ.get("CASSANDRA_CONTEXT_TOOL_STATS_TTL_SECONDS", "60")
+)
 CONTEXT_TOOL_STATS_CACHE_TTL_SECONDS = RTK_STATS_CACHE_TTL_SECONDS
 _context_tool_stats_cache_lock = threading.Lock()
 _context_tool_stats_cache: dict[str, Any] = {

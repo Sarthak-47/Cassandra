@@ -267,7 +267,9 @@ def test_register_server_with_env_vars(tmp_path: Path) -> None:
     registrar.register_server(spec)
 
     data = json.loads((tmp_path / "opencode.json").read_text())
-    assert data["mcp"]["cassandra"]["environment"] == {"CASSANDRA_PROXY_URL": "http://127.0.0.1:9090"}
+    assert data["mcp"]["cassandra"]["environment"] == {
+        "CASSANDRA_PROXY_URL": "http://127.0.0.1:9090"
+    }
 
 
 def test_register_then_re_register_with_different_env_returns_mismatch(tmp_path: Path) -> None:

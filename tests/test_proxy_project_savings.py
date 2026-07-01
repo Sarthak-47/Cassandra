@@ -341,7 +341,9 @@ def test_middleware_binds_project_header_to_context(tmp_path, monkeypatch):
     monkeypatch.setattr(server_module, "set_current_project", _capture)
 
     with TestClient(create_app(config)) as client:
-        assert client.get("/health", headers={"X-Cassandra-Project": " my repo "}).status_code == 200
+        assert (
+            client.get("/health", headers={"X-Cassandra-Project": " my repo "}).status_code == 200
+        )
         assert client.get("/health").status_code == 200
         # /p/<name> base-URL prefix (aider/copilot/cursor wraps): stripped
         # before routing, so the request still reaches /health.

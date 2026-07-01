@@ -1049,7 +1049,9 @@ class CodeAwareCompressor(Transform):
 
         # Check if tree-sitter is available
         if not _check_tree_sitter_available():
-            logger.warning("tree-sitter not available. Install with: pip install cassandra-ai[code]")
+            logger.warning(
+                "tree-sitter not available. Install with: pip install cassandra-ai[code]"
+            )
             if self.config.fallback_to_kompress:
                 return self._fallback_compress(code, original_tokens)
             return CodeCompressionResult(

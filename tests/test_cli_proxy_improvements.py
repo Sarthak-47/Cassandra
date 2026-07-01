@@ -393,7 +393,9 @@ class TestNewEnvVarWiring:
         # bedrock_region falls back to region
         assert mock_run_server["config"].bedrock_region == "eu-west-1"
 
-    def test_cassandra_memory_top_k_from_env(self, runner: CliRunner, mock_run_server: dict) -> None:
+    def test_cassandra_memory_top_k_from_env(
+        self, runner: CliRunner, mock_run_server: dict
+    ) -> None:
         result = runner.invoke(
             main,
             ["proxy", "--memory"],

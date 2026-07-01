@@ -246,7 +246,9 @@ def ensure_tokensave(version: str | None = None) -> Path | None:
         return existing
 
     if os.environ.get("CASSANDRA_BINARIES_OFFLINE"):
-        logger.info("tokensave not installed and CASSANDRA_BINARIES_OFFLINE set — skipping download")
+        logger.info(
+            "tokensave not installed and CASSANDRA_BINARIES_OFFLINE set — skipping download"
+        )
         return None
 
     try:

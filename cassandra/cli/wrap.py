@@ -930,7 +930,7 @@ def _setup_serena_mcp(
 
 def _remove_cassandra_installed_serena_mcp(registrar: Any) -> str:
     """Remove Serena MCP only if the ledger proves Cassandra installed it."""
-    from cassandra.mcp_registry.ledger import clear_install, cassandra_installed_matching
+    from cassandra.mcp_registry.ledger import cassandra_installed_matching, clear_install
 
     current = registrar.get_server("serena")
     if not cassandra_installed_matching(registrar.name, current):
@@ -1095,7 +1095,7 @@ def _setup_tokensave_mcp(registrar: Any, *, verbose: bool = False, force: bool =
 
 def _remove_cassandra_installed_tokensave_mcp(registrar: Any) -> str:
     """Remove the tokensave MCP entry only if the ledger proves Cassandra installed it."""
-    from cassandra.mcp_registry.ledger import clear_install, cassandra_installed_matching
+    from cassandra.mcp_registry.ledger import cassandra_installed_matching, clear_install
 
     current = registrar.get_server("tokensave")
     if not cassandra_installed_matching(registrar.name, current):
@@ -5507,7 +5507,9 @@ def unwrap_opencode(port: int, no_stop_proxy: bool) -> None:
             cleaned = strip_opencode_cassandra_blocks(content)
             if cleaned.strip():
                 _write_text(config_file, cleaned + "\n")
-                click.echo(f"  Removed Cassandra block from {config_file}; other content preserved.")
+                click.echo(
+                    f"  Removed Cassandra block from {config_file}; other content preserved."
+                )
                 status = "cleaned"
             else:
                 config_file.unlink()

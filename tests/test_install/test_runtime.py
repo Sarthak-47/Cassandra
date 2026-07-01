@@ -340,7 +340,9 @@ def test_run_foreground_and_detached_helpers(monkeypatch, tmp_path: Path) -> Non
     assert signal.SIGTERM in signal_calls
     assert _read_pid("default") is None
 
-    monkeypatch.setattr("cassandra.install.runtime.resolve_cassandra_command", lambda: ["cassandra"])
+    monkeypatch.setattr(
+        "cassandra.install.runtime.resolve_cassandra_command", lambda: ["cassandra"]
+    )
     monkeypatch.setattr("cassandra.install.runtime.sys.platform", "win32")
     monkeypatch.setattr("cassandra.install.runtime.subprocess.DETACHED_PROCESS", 1, raising=False)
     monkeypatch.setattr(

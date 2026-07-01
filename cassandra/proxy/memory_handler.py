@@ -146,7 +146,9 @@ class MemoryConfig:
     mode: MemoryMode = MemoryMode.AUTO_TAIL
     # Native memory tool (Anthropic's built-in memory_20250818)
     use_native_tool: bool = False
-    native_memory_dir: str = ""  # Directory for native memory files (default: ~/.cassandra/memories)
+    native_memory_dir: str = (
+        ""  # Directory for native memory files (default: ~/.cassandra/memories)
+    )
     # Qdrant+Neo4j config (Qdrant defaults resolve from CASSANDRA_QDRANT_* env vars)
     qdrant_url: str | None = field(default_factory=qdrant_env.qdrant_env_url)
     qdrant_host: str = field(default_factory=qdrant_env.qdrant_env_host)
