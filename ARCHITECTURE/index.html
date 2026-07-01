@@ -1,0 +1,4070 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="The Context Optimization Layer for LLM Applications">
+      
+      
+      
+        <link rel="canonical" href="https://sarthak-47.github.io/cassandra/ARCHITECTURE/">
+      
+      
+        <link rel="prev" href="../configuration/">
+      
+      
+        <link rel="next" href="../compression/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Architecture - Cassandra</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cassandra-sdk-a-complete-explanation" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Cassandra" class="md-header__button md-logo" aria-label="Cassandra" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Cassandra
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Architecture
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Sarthak-47/cassandra" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Sarthak-47/cassandra
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../quickstart/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  Core Concepts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../integration-guide/" class="md-tabs__link">
+          
+  
+  
+  Integrations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../benchmarks/" class="md-tabs__link">
+          
+  
+  
+  Benchmarks & Limitations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../troubleshooting/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Troubleshooting
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../learn/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Learn
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Cassandra" class="md-nav__button md-logo" aria-label="Cassandra" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Cassandra
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Sarthak-47/cassandra" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Sarthak-47/cassandra
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker-install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation (Docker)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../macos-deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    macOS Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Core Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#architecture-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-problem-does-cassandra-solve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Problem Does Cassandra Solve?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-cassandra-works-the-big-picture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How Cassandra Works: The Big Picture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-core-components-in-simple-terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Core Components (In Simple Terms)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Core Components (In Simple Terms)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-cassandraclient-clientpy-the-wrapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. CassandraClient (client.py) - The Wrapper
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-providers-providers-model-specific-knowledge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Providers (providers/) - Model-Specific Knowledge
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-parser-parserpy-understanding-your-messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Parser (parser.py) - Understanding Your Messages
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-transforms-transforms-the-compression-magic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Transforms (transforms/) - The Compression Magic
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Transforms (transforms/) - The Compression Magic">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#transform-1-cache-aligner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transform 1: Cache Aligner
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transform-2-tool-crusher-naive-disabled-by-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transform 2: Tool Crusher (Naive) - DISABLED BY DEFAULT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transform-3-smart-crusher-new-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transform 3: Smart Crusher (NEW DEFAULT)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transform-4-ml-compressor-optional-kompress" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transform 4: ML Compressor (Optional, Kompress)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#context-management-live-zone-only-compression" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context Management: Live-Zone-Only Compression
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-storage-storage-metrics-database" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Storage (storage/) - Metrics Database
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-data-flow-step-by-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Data Flow (Step by Step)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Data Flow (Step by Step)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-you-call-the-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: You call the API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-cassandraclient-intercepts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: CassandraClient intercepts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-transform-pipeline-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Transform Pipeline runs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-call-real-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Call real API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-log-metrics-and-return" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Log metrics and return
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-smart-crusher-deep-dive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Smart Crusher Deep Dive
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Smart Crusher Deep Dive">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#field-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Field Analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern Detection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#compression-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compression Strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ccr-architecture-compress-cache-retrieve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CCR Architecture: Compress-Cache-Retrieve
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CCR Architecture: Compress-Cache-Retrieve">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-key-insight" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Key Insight
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ccr-phase-1-compression-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CCR Phase 1: Compression Store
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ccr-phase-2-retrieval-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CCR Phase 2: Retrieval API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ccr-phase-3-tool-injection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CCR Phase 3: Tool Injection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ccr-phase-4-feedback-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CCR Phase 4: Feedback Loop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ccr-phase-5-response-handler-automatic-tool-call-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CCR Phase 5: Response Handler (Automatic Tool Call Handling)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ccr-phase-6-context-tracker-multi-turn-awareness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CCR Phase 6: Context Tracker (Multi-Turn Awareness)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-ccr-is-a-moat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why CCR is a Moat
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#image-compression-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image Compression Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Image Compression Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-key-insight_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Key Insight
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How It Works
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-trained-router" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Trained Router
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#provider-specific-compression" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provider-Specific Compression
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integration-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integration Points
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#code-location" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Code Location
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-structure-explained" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Structure Explained
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-design-decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Design Decisions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Key Design Decisions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-provider-agnostic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Provider-Agnostic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-deterministic-transforms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Deterministic Transforms
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-safety-first" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Safety First
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-smart-by-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Smart by Default
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-makes-this-different" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Makes This Different?
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What Makes This Different?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vs-summarization-llm-based-compression" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        vs. Summarization (LLM-based compression)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vs-simple-truncation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        vs. Simple Truncation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-numbers-from-our-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Numbers (From Our Tests)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compression/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compression
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../transforms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transforms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ccr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CCR (Compress-Cache-Retrieve)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../shared-context/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Shared Context
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integrations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../langchain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LangChain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agno/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agno
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Strands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../typescript-sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../proxy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Proxy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vertex/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vertex AI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../errors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Errors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../filesystem-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Filesystem Contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../persistent-installs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Persistent Installs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../network-diff-capture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Network Diff Capture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../image-compression/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image Compression
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../text-compression/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Text Compression
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks & Limitations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Benchmarks & Limitations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../LATENCY_BENCHMARKS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Latency Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../LIMITATIONS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Limitations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../learn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Learn
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#architecture-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-problem-does-cassandra-solve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Problem Does Cassandra Solve?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-cassandra-works-the-big-picture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How Cassandra Works: The Big Picture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-core-components-in-simple-terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Core Components (In Simple Terms)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Core Components (In Simple Terms)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-cassandraclient-clientpy-the-wrapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. CassandraClient (client.py) - The Wrapper
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-providers-providers-model-specific-knowledge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Providers (providers/) - Model-Specific Knowledge
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-parser-parserpy-understanding-your-messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Parser (parser.py) - Understanding Your Messages
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-transforms-transforms-the-compression-magic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Transforms (transforms/) - The Compression Magic
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Transforms (transforms/) - The Compression Magic">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#transform-1-cache-aligner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transform 1: Cache Aligner
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transform-2-tool-crusher-naive-disabled-by-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transform 2: Tool Crusher (Naive) - DISABLED BY DEFAULT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transform-3-smart-crusher-new-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transform 3: Smart Crusher (NEW DEFAULT)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#transform-4-ml-compressor-optional-kompress" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transform 4: ML Compressor (Optional, Kompress)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#context-management-live-zone-only-compression" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context Management: Live-Zone-Only Compression
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-storage-storage-metrics-database" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Storage (storage/) - Metrics Database
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-data-flow-step-by-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Data Flow (Step by Step)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Data Flow (Step by Step)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-you-call-the-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: You call the API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-cassandraclient-intercepts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: CassandraClient intercepts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-transform-pipeline-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Transform Pipeline runs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-call-real-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Call real API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-log-metrics-and-return" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Log metrics and return
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-smart-crusher-deep-dive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Smart Crusher Deep Dive
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Smart Crusher Deep Dive">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#field-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Field Analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern Detection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#compression-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compression Strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ccr-architecture-compress-cache-retrieve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CCR Architecture: Compress-Cache-Retrieve
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CCR Architecture: Compress-Cache-Retrieve">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-key-insight" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Key Insight
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ccr-phase-1-compression-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CCR Phase 1: Compression Store
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ccr-phase-2-retrieval-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CCR Phase 2: Retrieval API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ccr-phase-3-tool-injection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CCR Phase 3: Tool Injection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ccr-phase-4-feedback-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CCR Phase 4: Feedback Loop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ccr-phase-5-response-handler-automatic-tool-call-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CCR Phase 5: Response Handler (Automatic Tool Call Handling)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ccr-phase-6-context-tracker-multi-turn-awareness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CCR Phase 6: Context Tracker (Multi-Turn Awareness)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-ccr-is-a-moat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why CCR is a Moat
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#image-compression-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image Compression Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Image Compression Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-key-insight_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Key Insight
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How It Works
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-trained-router" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Trained Router
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#provider-specific-compression" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provider-Specific Compression
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integration-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integration Points
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#code-location" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Code Location
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-structure-explained" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Structure Explained
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-design-decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Design Decisions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Key Design Decisions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-provider-agnostic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Provider-Agnostic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-deterministic-transforms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Deterministic Transforms
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-safety-first" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Safety First
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-smart-by-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Smart by Default
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-makes-this-different" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Makes This Different?
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What Makes This Different?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vs-summarization-llm-based-compression" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        vs. Summarization (LLM-based compression)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vs-simple-truncation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        vs. Simple Truncation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-numbers-from-our-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Numbers (From Our Tests)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Sarthak-47/cassandra/edit/main/wiki/ARCHITECTURE.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="cassandra-sdk-a-complete-explanation">Cassandra SDK: A Complete Explanation<a class="headerlink" href="#cassandra-sdk-a-complete-explanation" title="Permanent link">&para;</a></h1>
+<h2 id="architecture-overview">Architecture Overview<a class="headerlink" href="#architecture-overview" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart TB
+    subgraph Entry["Entry Points"]
+        Proxy["Proxy Mode&lt;br/&gt;&lt;i&gt;Zero code changes&lt;/i&gt;"]
+        SDK["SDK Mode&lt;br/&gt;&lt;i&gt;CassandraClient&lt;/i&gt;"]
+        Integrations["Integrations&lt;br/&gt;&lt;i&gt;LangChain / Agno&lt;/i&gt;"]
+    end
+
+    subgraph Pipeline["Transform Pipeline"]
+        direction TB
+
+        CA["Cache Aligner&lt;br/&gt;━━━━━━━━━━━━━━━&lt;br/&gt;Extracts dynamic content&lt;br/&gt;(dates, UUIDs, tokens)&lt;br/&gt;Stable prefix for caching"]
+
+        SC["Smart Crusher&lt;br/&gt;━━━━━━━━━━━━━━━&lt;br/&gt;Analyzes tool outputs&lt;br/&gt;Keeps: first, last, errors, outliers&lt;br/&gt;70-95% reduction"]
+
+        CM["Context Manager&lt;br/&gt;━━━━━━━━━━━━━━━&lt;br/&gt;Enforces token limits&lt;br/&gt;Scores by recency and relevance&lt;br/&gt;Fits context window"]
+
+        CA --&gt; SC --&gt; CM
+    end
+
+    subgraph Cache["Provider Cache Optimization"]
+        direction LR
+        Anthropic["Anthropic&lt;br/&gt;&lt;i&gt;cache_control blocks&lt;/i&gt;&lt;br/&gt;90% savings"]
+        OpenAI["OpenAI&lt;br/&gt;&lt;i&gt;Prefix alignment&lt;/i&gt;&lt;br/&gt;50% savings"]
+        Google["Google&lt;br/&gt;&lt;i&gt;CachedContent API&lt;/i&gt;&lt;br/&gt;75% savings"]
+    end
+
+    subgraph CCR["CCR: Compress-Cache-Retrieve"]
+        Store[("Compression&lt;br/&gt;Store")]
+        Tool["Retrieve Tool&lt;br/&gt;&lt;i&gt;LLM requests original&lt;/i&gt;"]
+        Store &lt;--&gt; Tool
+    end
+
+    LLM["LLM API&lt;br/&gt;&lt;i&gt;OpenAI / Anthropic / Google&lt;/i&gt;"]
+
+    Entry --&gt; Pipeline
+    Pipeline --&gt; Cache
+    Cache --&gt; LLM
+    SC -.-&gt;|"Stores original"| Store
+    LLM -.-&gt;|"If needed"| Tool</code></pre>
+<hr />
+<h2 id="what-problem-does-cassandra-solve">What Problem Does Cassandra Solve?<a class="headerlink" href="#what-problem-does-cassandra-solve" title="Permanent link">&para;</a></h2>
+<p>When you use AI models like GPT-4 or Claude, you pay for <strong>tokens</strong> - the pieces of text you send (input) and receive (output). The problem is:</p>
+<ol>
+<li><strong>Tool outputs are HUGE</strong>: When an AI agent calls tools (search, database queries, APIs), the responses are often massive JSON blobs with thousands of tokens</li>
+<li><strong>Most of that data is REDUNDANT</strong>: 60 metric data points showing <code>cpu: 45%</code> repeated, or 50 log entries with the same error message</li>
+<li><strong>You're paying for waste</strong>: Every token costs money and adds latency</li>
+<li><strong>Context windows fill up</strong>: Models have limits (128K tokens), and bloated tool outputs eat into your available space</li>
+</ol>
+<p><strong>Cassandra creates "cassandra"</strong> - it intelligently compresses your input tokens so you have more room (and budget) for what matters.</p>
+<hr />
+<h2 id="how-cassandra-works-the-big-picture">How Cassandra Works: The Big Picture<a class="headerlink" href="#how-cassandra-works-the-big-picture" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌─────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│                        YOUR APPLICATION                          │
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>└─────────────────────────────────────────────────────────────────┘
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>                               │
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>                               ▼
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>┌─────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│                      CASSANDRA CLIENT                             │
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│  │   ANALYZE   │→ │  TRANSFORM  │→ │    CALL     │             │
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>│  │  (Parser)   │  │  (Pipeline) │  │   (API)     │             │
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>│  └─────────────┘  └─────────────┘  └─────────────┘             │
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>│         │                │                │                     │
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>│         ▼                ▼                ▼                     │
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>│   Count tokens     Apply compressions   Send to OpenAI/Claude  │
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>│   Detect waste     Preserve meaning     Log metrics            │
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>└─────────────────────────────────────────────────────────────────┘
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>                               │
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>                               ▼
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>┌─────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>│                    OPENAI / ANTHROPIC API                        │
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>└─────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+<hr />
+<h2 id="the-core-components-in-simple-terms">The Core Components (In Simple Terms)<a class="headerlink" href="#the-core-components-in-simple-terms" title="Permanent link">&para;</a></h2>
+<h3 id="1-cassandraclient-clientpy-the-wrapper">1. CassandraClient (<code>client.py</code>) - The Wrapper<a class="headerlink" href="#1-cassandraclient-clientpy-the-wrapper" title="Permanent link">&para;</a></h3>
+<p>This is what you interact with. It wraps your existing OpenAI or Anthropic client:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Before (normal OpenAI)</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">client</span> <span class="o">=</span> <span class="n">OpenAI</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4o&quot;</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">])</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># After (with Cassandra)</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">base</span> <span class="o">=</span> <span class="n">OpenAI</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">client</span> <span class="o">=</span> <span class="n">CassandraClient</span><span class="p">(</span><span class="n">original_client</span><span class="o">=</span><span class="n">base</span><span class="p">,</span> <span class="n">provider</span><span class="o">=</span><span class="n">OpenAIProvider</span><span class="p">())</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4o&quot;</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">])</span>
+</code></pre></div>
+<p><strong>What it does:</strong>
+- Intercepts your API calls
+- Runs messages through the transform pipeline
+- Calls the real API with optimized messages
+- Logs metrics to a database
+- Returns the response unchanged</p>
+<p><strong>Two modes:</strong>
+- <code>audit</code>: Just observe and log (no changes)
+- <code>optimize</code>: Apply transforms to reduce tokens</p>
+<hr />
+<h3 id="2-providers-providers-model-specific-knowledge">2. Providers (<code>providers/</code>) - Model-Specific Knowledge<a class="headerlink" href="#2-providers-providers-model-specific-knowledge" title="Permanent link">&para;</a></h3>
+<p>Different AI providers have different rules:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">OpenAIProvider</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="c1"># Knows GPT-4o has 128K context</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="c1"># Knows how to count tokens (tiktoken)</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="c1"># Knows pricing ($2.50 per million input tokens)</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">AnthropicProvider</span><span class="p">:</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="c1"># Knows Claude has 200K context</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="c1"># Uses different tokenization (~4 chars per token)</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="c1"># Different pricing structure</span>
+</code></pre></div>
+<p><strong>Why this matters:</strong> Token counting is model-specific. GPT-4 uses different tokenization than Claude. Cassandra needs accurate counts to know how much to compress.</p>
+<hr />
+<h3 id="3-parser-parserpy-understanding-your-messages">3. Parser (<code>parser.py</code>) - Understanding Your Messages<a class="headerlink" href="#3-parser-parserpy-understanding-your-messages" title="Permanent link">&para;</a></h3>
+<p>Before optimizing, Cassandra needs to understand what's in your messages:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">messages</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;You are helpful...&quot;</span><span class="p">},</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;Search for X&quot;</span><span class="p">},</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span> <span class="s2">&quot;tool_calls&quot;</span><span class="p">:</span> <span class="p">[</span><span class="o">...</span><span class="p">]},</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;tool&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;{huge JSON}&quot;</span><span class="p">},</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="p">]</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="c1"># Parser breaks this into &quot;blocks&quot;:</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">blocks</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    <span class="n">Block</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="n">tokens</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="o">...</span><span class="p">),</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    <span class="n">Block</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">tokens</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="o">...</span><span class="p">),</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="n">Block</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;tool_call&quot;</span><span class="p">,</span> <span class="n">tokens</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="o">...</span><span class="p">),</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    <span class="n">Block</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;tool_result&quot;</span><span class="p">,</span> <span class="n">tokens</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span> <span class="o">...</span><span class="p">),</span>  <span class="c1"># ← This is the problem!</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="p">]</span>
+</code></pre></div>
+<p><strong>It also detects waste signals:</strong>
+- Large JSON blobs (&gt;500 tokens)
+- HTML tags and comments
+- Base64 encoded data
+- Excessive whitespace</p>
+<hr />
+<h3 id="4-transforms-transforms-the-compression-magic">4. Transforms (<code>transforms/</code>) - The Compression Magic<a class="headerlink" href="#4-transforms-transforms-the-compression-magic" title="Permanent link">&para;</a></h3>
+<p>This is where the real work happens. Cassandra has 4 transforms that run in sequence:</p>
+<h4 id="transform-1-cache-aligner">Transform 1: Cache Aligner<a class="headerlink" href="#transform-1-cache-aligner" title="Permanent link">&para;</a></h4>
+<p><strong>Problem:</strong> LLM providers cache your prompts, but only if they're byte-identical. If your system prompt has today's date, every day is a cache miss.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Before:</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="s2">&quot;You are helpful. Current Date: 2024-12-15&quot;</span>  <span class="c1"># Changes daily = no cache</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># After:</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="s2">&quot;You are helpful.&quot;</span>  <span class="c1"># Static = cacheable</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="s2">&quot;[Context: Current Date: 2024-12-15]&quot;</span>  <span class="c1"># Dynamic part moved to end</span>
+</code></pre></div>
+<p><strong>How it works:</strong>
+1. Find date patterns in system prompt
+2. Extract them
+3. Move to end of message
+4. Now the PREFIX is stable → cache hits!</p>
+<hr />
+<h4 id="transform-2-tool-crusher-naive-disabled-by-default">Transform 2: Tool Crusher (Naive) - DISABLED BY DEFAULT<a class="headerlink" href="#transform-2-tool-crusher-naive-disabled-by-default" title="Permanent link">&para;</a></h4>
+<p>This was our first approach - simple but limited:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Before: 60 items</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="p">[{</span><span class="s2">&quot;ts&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;cpu&quot;</span><span class="p">:</span> <span class="mi">45</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;ts&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;cpu&quot;</span><span class="p">:</span> <span class="mi">45</span><span class="p">},</span> <span class="o">...</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;ts&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span> <span class="s2">&quot;cpu&quot;</span><span class="p">:</span> <span class="mi">95</span><span class="p">}]</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># After: First 10 items only</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="p">[{</span><span class="s2">&quot;ts&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;cpu&quot;</span><span class="p">:</span> <span class="mi">45</span><span class="p">},</span> <span class="o">...</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;ts&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;cpu&quot;</span><span class="p">:</span> <span class="mi">45</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;__truncated&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">}]</span>
+</code></pre></div>
+<p><strong>Problem:</strong> If the important data (CPU spike) is at position 45, it gets thrown away!</p>
+<hr />
+<h4 id="transform-3-smart-crusher-new-default">Transform 3: Smart Crusher (NEW DEFAULT)<a class="headerlink" href="#transform-3-smart-crusher-new-default" title="Permanent link">&para;</a></h4>
+<p>This is the intelligent approach using <strong>statistical analysis</strong>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Analyzes the data first:</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">analysis</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="s2">&quot;ts&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;sequential&quot;</span><span class="p">,</span> <span class="s2">&quot;unique_ratio&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">},</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="s2">&quot;host&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;constant&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;prod-1&quot;</span><span class="p">},</span>  <span class="c1"># ← Same everywhere!</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="s2">&quot;cpu&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;variance&quot;</span><span class="p">:</span> <span class="mi">892</span><span class="p">,</span> <span class="s2">&quot;change_points&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">45</span><span class="p">]},</span>  <span class="c1"># ← Spike detected!</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="p">}</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="c1"># Smart compression:</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="p">{</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="s2">&quot;__cassandra_constants&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;host&quot;</span><span class="p">:</span> <span class="s2">&quot;prod-1&quot;</span><span class="p">},</span>  <span class="c1"># Factor out</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="s2">&quot;__cassandra_summary&quot;</span><span class="p">:</span> <span class="s2">&quot;items 0-44: cpu stable at ~45&quot;</span><span class="p">,</span>  <span class="c1"># Summarize boring part</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="p">[</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>        <span class="p">{</span><span class="s2">&quot;ts&quot;</span><span class="p">:</span> <span class="mi">45</span><span class="p">,</span> <span class="s2">&quot;cpu&quot;</span><span class="p">:</span> <span class="mi">92</span><span class="p">},</span>  <span class="c1"># Keep the spike!</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>        <span class="p">{</span><span class="s2">&quot;ts&quot;</span><span class="p">:</span> <span class="mi">46</span><span class="p">,</span> <span class="s2">&quot;cpu&quot;</span><span class="p">:</span> <span class="mi">95</span><span class="p">},</span>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>        <span class="o">...</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>    <span class="p">]</span>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Strategies it uses:</strong>
+1. <strong>TIME_SERIES</strong>: Detect variance spikes, keep change points
+2. <strong>CLUSTER</strong>: Group similar log messages, keep 1-2 per cluster
+3. <strong>TOP_N</strong>: For search results, keep highest scored
+4. <strong>SMART_SAMPLE</strong>: Statistical sampling with constant extraction</p>
+<hr />
+<h4 id="transform-4-ml-compressor-optional-kompress">Transform 4: ML Compressor (Optional, Kompress)<a class="headerlink" href="#transform-4-ml-compressor-optional-kompress" title="Permanent link">&para;</a></h4>
+<p><strong>When to use:</strong> Maximum compression needed and latency is acceptable.</p>
+<p>The proxy ships an opt-in ML compression path backed by <strong>Kompress</strong>
+(ModernBERT-based token classifier). Install with <code>pip install
+'cassandra-ai[ml]'</code>; see <code>wiki/transforms.md</code> for current configuration.</p>
+<p><strong>Note:</strong> The earlier LLMLingua-2 integration (<code>--llmlingua</code> flag, the
+<code>cassandra-ai[llmlingua]</code> extra, and the <code>LLMLinguaCompressor</code> class) was
+retired and replaced by Kompress. <code>pip install 'cassandra-ai[llmlingua]'</code>
+no longer resolves; use <code>[ml]</code> instead.</p>
+<hr />
+<h4 id="context-management-live-zone-only-compression">Context Management: Live-Zone-Only Compression<a class="headerlink" href="#context-management-live-zone-only-compression" title="Permanent link">&para;</a></h4>
+<p><strong>Approach:</strong> Cassandra never drops messages from conversation history, and it does not do position-based or score-based context management. Context management is handled automatically inside the pipeline by compressing only the <strong>live zone</strong> — the newest content blocks (the latest user message and the latest tool result / tool output).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a># The cache hot zone is NEVER mutated:
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a># - System prompt
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a># - Tool definitions
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a># - Older conversation turns
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>#
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a># Only the newest content blocks are compressed (type-aware),
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a># and every compression is reversible via CCR.
+</code></pre></div>
+<p><strong>Why this matters:</strong> Leaving the hot zone untouched preserves provider prompt caching (e.g. Claude's cached-prefix read discount). Because only the newest blocks change, earlier turns stay byte-stable across requests and keep hitting the KV cache. Compression is type-aware (handled by ContentRouter and its compressors) and fully reversible — the LLM can call <code>cassandra_retrieve</code> to restore any compressed block.</p>
+<hr />
+<h3 id="5-storage-storage-metrics-database">5. Storage (<code>storage/</code>) - Metrics Database<a class="headerlink" href="#5-storage-storage-metrics-database" title="Permanent link">&para;</a></h3>
+<p>Every request is logged:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">requests</span><span class="w"> </span><span class="p">(</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="k">timestamp</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span><span class="n">model</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span><span class="k">mode</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">  </span><span class="c1">-- audit or optimize</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">    </span><span class="n">tokens_input_before</span><span class="w"> </span><span class="nb">INTEGER</span><span class="p">,</span><span class="w">  </span><span class="c1">-- Before Cassandra</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">    </span><span class="n">tokens_input_after</span><span class="w"> </span><span class="nb">INTEGER</span><span class="p">,</span><span class="w">   </span><span class="c1">-- After Cassandra</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">    </span><span class="n">tokens_saved</span><span class="w"> </span><span class="nb">INTEGER</span><span class="p">,</span><span class="w">         </span><span class="c1">-- The win!</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">    </span><span class="n">transforms_applied</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">      </span><span class="c1">-- What we did</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">    </span><span class="p">...</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="p">);</span>
+</code></pre></div>
+<p>This lets you:
+- See how much you're saving
+- Generate reports
+- Track trends over time</p>
+<hr />
+<h2 id="the-data-flow-step-by-step">The Data Flow (Step by Step)<a class="headerlink" href="#the-data-flow-step-by-step" title="Permanent link">&para;</a></h2>
+<p>Let's trace a real request:</p>
+<h3 id="step-1-you-call-the-api">Step 1: You call the API<a class="headerlink" href="#step-1-you-call-the-api" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4o&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>        <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;You are an SRE. Date: 2024-12-15&quot;</span><span class="p">},</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>        <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;Check the metrics&quot;</span><span class="p">},</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>        <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;assistant&quot;</span><span class="p">,</span> <span class="s2">&quot;tool_calls&quot;</span><span class="p">:</span> <span class="p">[</span><span class="o">...</span><span class="p">]},</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>        <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;tool&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;{60 metric points...}&quot;</span><span class="p">},</span>  <span class="c1"># 5000 tokens!</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>        <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;What&#39;s wrong?&quot;</span><span class="p">},</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="p">],</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="n">cassandra_mode</span><span class="o">=</span><span class="s2">&quot;optimize&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="p">)</span>
+</code></pre></div>
+<h3 id="step-2-cassandraclient-intercepts">Step 2: CassandraClient intercepts<a class="headerlink" href="#step-2-cassandraclient-intercepts" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># In client.py:</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">_create</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">,</span> <span class="o">...</span><span class="p">):</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    <span class="c1"># 1. Parse messages into blocks</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>    <span class="n">blocks</span><span class="p">,</span> <span class="n">breakdown</span><span class="p">,</span> <span class="n">waste</span> <span class="o">=</span> <span class="n">parse_messages</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">)</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="c1"># breakdown = {&quot;system&quot;: 50, &quot;user&quot;: 20, &quot;tool_result&quot;: 5000, ...}</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    <span class="c1"># 2. Count original tokens</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>    <span class="n">tokens_before</span> <span class="o">=</span> <span class="mi">5100</span>
+</code></pre></div>
+<h3 id="step-3-transform-pipeline-runs">Step 3: Transform Pipeline runs<a class="headerlink" href="#step-3-transform-pipeline-runs" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># In pipeline.py:</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">,</span> <span class="o">...</span><span class="p">):</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    <span class="c1"># Transform 1: Cache Aligner</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    <span class="c1"># - Extracts &quot;Date: 2024-12-15&quot; from system prompt</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="c1"># - Moves to end</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>    <span class="c1"># Transform 2: Smart Crusher</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>    <span class="c1"># - Analyzes 60 metric points</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>    <span class="c1"># - Detects CPU spike at point 45</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>    <span class="c1"># - Compresses to 17 points (preserving spike)</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>    <span class="c1"># - Factors out constant &quot;host&quot; field</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>
+<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>    <span class="c1"># Transform 3: Kompress ML compressor (opt-in via cassandra-ai[ml])</span>
+<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a>    <span class="c1"># - ModernBERT-based compression on remaining long text</span>
+<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a>    <span class="c1"># - Auto-detects content type for optimal rate</span>
+<a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a>    <span class="c1"># - Stores original in CCR for retrieval</span>
+<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a>
+<a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a>    <span class="c1"># Transform 4: Rolling Window</span>
+<a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a>    <span class="c1"># - Checks if we&#39;re under limit (we are)</span>
+<a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a>    <span class="c1"># - No drops needed</span>
+<a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a>
+<a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a>    <span class="k">return</span> <span class="n">TransformResult</span><span class="p">(</span>
+<a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a>        <span class="n">messages</span><span class="o">=</span><span class="n">optimized</span><span class="p">,</span>
+<a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a>        <span class="n">tokens_before</span><span class="o">=</span><span class="mi">5100</span><span class="p">,</span>
+<a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a>        <span class="n">tokens_after</span><span class="o">=</span><span class="mi">1200</span><span class="p">,</span>  <span class="c1"># 76% reduction!</span>
+<a id="__codelineno-11-26" name="__codelineno-11-26" href="#__codelineno-11-26"></a>        <span class="n">transforms</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;cache_align&quot;</span><span class="p">,</span> <span class="s2">&quot;smart_crush:1&quot;</span><span class="p">]</span>
+<a id="__codelineno-11-27" name="__codelineno-11-27" href="#__codelineno-11-27"></a>    <span class="p">)</span>
+</code></pre></div>
+<h3 id="step-4-call-real-api">Step 4: Call real API<a class="headerlink" href="#step-4-call-real-api" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># In client.py:</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_original</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4o&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>    <span class="n">messages</span><span class="o">=</span><span class="n">optimized_messages</span><span class="p">,</span>  <span class="c1"># Only 1200 tokens now!</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="p">)</span>
+</code></pre></div>
+<h3 id="step-5-log-metrics-and-return">Step 5: Log metrics and return<a class="headerlink" href="#step-5-log-metrics-and-return" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Save to database</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="n">metrics</span> <span class="o">=</span> <span class="n">RequestMetrics</span><span class="p">(</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>    <span class="n">tokens_input_before</span><span class="o">=</span><span class="mi">5100</span><span class="p">,</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>    <span class="n">tokens_input_after</span><span class="o">=</span><span class="mi">1200</span><span class="p">,</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>    <span class="n">tokens_saved</span><span class="o">=</span><span class="mi">3900</span><span class="p">,</span>  <span class="c1"># 76%!</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>    <span class="o">...</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="p">)</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="n">storage</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">metrics</span><span class="p">)</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="k">return</span> <span class="n">response</span>  <span class="c1"># Unchanged from API</span>
+</code></pre></div>
+<hr />
+<h2 id="the-smart-crusher-deep-dive">The Smart Crusher Deep Dive<a class="headerlink" href="#the-smart-crusher-deep-dive" title="Permanent link">&para;</a></h2>
+<p>This is the most sophisticated part. Here's how it analyzes data:</p>
+<h3 id="field-analysis">Field Analysis<a class="headerlink" href="#field-analysis" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">analyze_field</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">items</span><span class="p">):</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>    <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">]</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>    <span class="k">return</span> <span class="p">{</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>        <span class="s2">&quot;unique_ratio&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">values</span><span class="p">))</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">),</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>        <span class="c1"># 0.0 = all same (constant)</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>        <span class="c1"># 1.0 = all different (unique IDs)</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>        <span class="s2">&quot;variance&quot;</span><span class="p">:</span> <span class="n">statistics</span><span class="o">.</span><span class="n">variance</span><span class="p">(</span><span class="n">values</span><span class="p">),</span>  <span class="c1"># For numbers</span>
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>        <span class="c1"># Low = stable</span>
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>        <span class="c1"># High = changing</span>
+<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>
+<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>        <span class="s2">&quot;change_points&quot;</span><span class="p">:</span> <span class="n">detect_spikes</span><span class="p">(</span><span class="n">values</span><span class="p">),</span>
+<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>        <span class="c1"># Indices where value jumps significantly</span>
+<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>    <span class="p">}</span>
+</code></pre></div>
+<h3 id="pattern-detection">Pattern Detection<a class="headerlink" href="#pattern-detection" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">detect_pattern</span><span class="p">(</span><span class="n">field_stats</span><span class="p">):</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>    <span class="c1"># Has timestamp + numeric variance? → TIME_SERIES</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>    <span class="k">if</span> <span class="n">has_timestamp</span> <span class="ow">and</span> <span class="n">has_numeric_variance</span><span class="p">:</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>        <span class="k">return</span> <span class="s2">&quot;time_series&quot;</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>    <span class="c1"># Has message field + level field? → LOGS</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>    <span class="k">if</span> <span class="n">has_message_field</span> <span class="ow">and</span> <span class="n">has_level_field</span><span class="p">:</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>        <span class="k">return</span> <span class="s2">&quot;logs&quot;</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>    <span class="c1"># Has score/rank field? → SEARCH_RESULTS</span>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>    <span class="k">if</span> <span class="n">has_score_field</span><span class="p">:</span>
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>        <span class="k">return</span> <span class="s2">&quot;search_results&quot;</span>
+<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a>
+<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a>    <span class="k">return</span> <span class="s2">&quot;generic&quot;</span>
+</code></pre></div>
+<h3 id="compression-strategy">Compression Strategy<a class="headerlink" href="#compression-strategy" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">compress</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">analysis</span><span class="p">):</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>    <span class="k">if</span> <span class="n">analysis</span><span class="o">.</span><span class="n">pattern</span> <span class="o">==</span> <span class="s2">&quot;time_series&quot;</span><span class="p">:</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>        <span class="c1"># Keep points around change points</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>        <span class="c1"># Summarize stable regions</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>        <span class="k">return</span> <span class="n">time_series_compress</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">analysis</span><span class="o">.</span><span class="n">change_points</span><span class="p">)</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>    <span class="k">elif</span> <span class="n">analysis</span><span class="o">.</span><span class="n">pattern</span> <span class="o">==</span> <span class="s2">&quot;logs&quot;</span><span class="p">:</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>        <span class="c1"># Cluster similar messages</span>
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>        <span class="c1"># Keep 1-2 per cluster</span>
+<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>        <span class="k">return</span> <span class="n">cluster_compress</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">analysis</span><span class="o">.</span><span class="n">clusters</span><span class="p">)</span>
+<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>
+<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>    <span class="k">elif</span> <span class="n">analysis</span><span class="o">.</span><span class="n">pattern</span> <span class="o">==</span> <span class="s2">&quot;search_results&quot;</span><span class="p">:</span>
+<a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a>        <span class="c1"># Sort by score</span>
+<a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a>        <span class="c1"># Keep top N</span>
+<a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a>        <span class="k">return</span> <span class="n">top_n_compress</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">analysis</span><span class="o">.</span><span class="n">score_field</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="ccr-architecture-compress-cache-retrieve">CCR Architecture: Compress-Cache-Retrieve<a class="headerlink" href="#ccr-architecture-compress-cache-retrieve" title="Permanent link">&para;</a></h2>
+<h3 id="the-key-insight">The Key Insight<a class="headerlink" href="#the-key-insight" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p>"Prefer raw &gt; Compaction &gt; Summarization only when compaction no longer yields enough space. Compaction (Reversible) strips out information that is redundant because it exists in the environment—if the agent needs to read the data later, it can use a tool to retrieve it." — Phil Schmid, Context Engineering</p>
+</blockquote>
+<p><strong>The problem with traditional compression:</strong> If we guess wrong about what's important, we've permanently lost data. The LLM might need something we threw away.</p>
+<p><strong>CCR's solution:</strong> Make compression <strong>reversible</strong>. When SmartCrusher compresses, the original data is cached. If the LLM needs more, it can retrieve instantly.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>┌──────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>│  TOOL OUTPUT (1000 items)                                         │
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>└────────────────────────┬─────────────────────────────────────────┘
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>                         │
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>                         ▼
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>┌──────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>│  CASSANDRA CCR LAYER                                               │
+<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>│                                                                   │
+<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>│  1. COMPRESS: Keep 20 items (errors, anomalies, relevant)        │
+<a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>│  2. CACHE: Store full 1000 items in fast local cache             │
+<a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>│  3. INJECT: Add retrieval capability to LLM context              │
+<a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>│                                                                   │
+<a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a>│  &quot;20 items shown. Use /v1/retrieve?hash=xxx for more.&quot;           │
+<a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a>└────────────────────────┬─────────────────────────────────────────┘
+<a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a>                         │
+<a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a>                         ▼
+<a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a>┌──────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-17-18" name="__codelineno-17-18" href="#__codelineno-17-18"></a>│  LLM PROCESSING                                                   │
+<a id="__codelineno-17-19" name="__codelineno-17-19" href="#__codelineno-17-19"></a>│                                                                   │
+<a id="__codelineno-17-20" name="__codelineno-17-20" href="#__codelineno-17-20"></a>│  Option A: LLM solves task with 20 items → Done                  │
+<a id="__codelineno-17-21" name="__codelineno-17-21" href="#__codelineno-17-21"></a>│  Option B: LLM needs more → retrieves via API                    │
+<a id="__codelineno-17-22" name="__codelineno-17-22" href="#__codelineno-17-22"></a>│            → We fetch from cache → Return instantly              │
+<a id="__codelineno-17-23" name="__codelineno-17-23" href="#__codelineno-17-23"></a>└────────────────────────┬─────────────────────────────────────────┘
+<a id="__codelineno-17-24" name="__codelineno-17-24" href="#__codelineno-17-24"></a>                         │
+<a id="__codelineno-17-25" name="__codelineno-17-25" href="#__codelineno-17-25"></a>                         ▼
+<a id="__codelineno-17-26" name="__codelineno-17-26" href="#__codelineno-17-26"></a>┌──────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-17-27" name="__codelineno-17-27" href="#__codelineno-17-27"></a>│  FEEDBACK LOOP                                                    │
+<a id="__codelineno-17-28" name="__codelineno-17-28" href="#__codelineno-17-28"></a>│                                                                   │
+<a id="__codelineno-17-29" name="__codelineno-17-29" href="#__codelineno-17-29"></a>│  Track: What did the LLM retrieve? What queries?                 │
+<a id="__codelineno-17-30" name="__codelineno-17-30" href="#__codelineno-17-30"></a>│  Learn: &quot;For this tool, keep items matching common queries&quot;      │
+<a id="__codelineno-17-31" name="__codelineno-17-31" href="#__codelineno-17-31"></a>│  Improve: Next compression uses learned patterns                 │
+<a id="__codelineno-17-32" name="__codelineno-17-32" href="#__codelineno-17-32"></a>└──────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+<hr />
+<h3 id="ccr-phase-1-compression-store">CCR Phase 1: Compression Store<a class="headerlink" href="#ccr-phase-1-compression-store" title="Permanent link">&para;</a></h3>
+<p><strong>Location:</strong> <code>cassandra/cache/compression_store.py</code></p>
+<p>When SmartCrusher compresses, the original content is stored for on-demand retrieval:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="nd">@dataclass</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">CompressionEntry</span><span class="p">:</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>    <span class="nb">hash</span><span class="p">:</span> <span class="nb">str</span>                    <span class="c1"># 16-char SHA256 for retrieval</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>    <span class="n">original_content</span><span class="p">:</span> <span class="nb">str</span>        <span class="c1"># Full JSON before compression</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>    <span class="n">compressed_content</span><span class="p">:</span> <span class="nb">str</span>      <span class="c1"># Compressed JSON</span>
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>    <span class="n">original_item_count</span><span class="p">:</span> <span class="nb">int</span>
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>    <span class="n">compressed_item_count</span><span class="p">:</span> <span class="nb">int</span>
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>    <span class="n">tool_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>        <span class="c1"># For feedback tracking</span>
+<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>    <span class="n">created_at</span><span class="p">:</span> <span class="nb">float</span>
+<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>    <span class="n">ttl</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span>               <span class="c1"># 5 minute default</span>
+</code></pre></div>
+<p><strong>Features:</strong>
+- Thread-safe in-memory storage
+- TTL-based expiration (default 5 minutes)
+- LRU-style eviction when capacity reached
+- Hash-keyed retrieval that always returns the full original content</p>
+<p><strong>Usage:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">get_compression_store</span><span class="p">()</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="c1"># Store compressed content</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="n">hash_key</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">store</span><span class="p">(</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>    <span class="n">original</span><span class="o">=</span><span class="n">original_json</span><span class="p">,</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>    <span class="n">compressed</span><span class="o">=</span><span class="n">compressed_json</span><span class="p">,</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>    <span class="n">original_item_count</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>    <span class="n">compressed_item_count</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>    <span class="n">tool_name</span><span class="o">=</span><span class="s2">&quot;search_api&quot;</span><span class="p">,</span>
+<a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="p">)</span>
+<a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a>
+<a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a><span class="c1"># Retrieve later (by hash; always returns the full original content)</span>
+<a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a><span class="n">entry</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">hash_key</span><span class="p">)</span>
+</code></pre></div></p>
+<hr />
+<h3 id="ccr-phase-2-retrieval-api">CCR Phase 2: Retrieval API<a class="headerlink" href="#ccr-phase-2-retrieval-api" title="Permanent link">&para;</a></h3>
+<p><strong>Endpoints:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/v1/retrieve</code></td>
+<td>POST</td>
+<td>Retrieve original content by hash</td>
+</tr>
+<tr>
+<td><code>/v1/retrieve/{hash}</code></td>
+<td>GET</td>
+<td>Retrieve original content by hash</td>
+</tr>
+</tbody>
+</table>
+<p>Retrieval is by hash only — it always returns the full original content.</p>
+<p><strong>Retrieval Request:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="p">{</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">    </span><span class="nt">&quot;hash&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;abc123def456...&quot;</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="p">}</span>
+</code></pre></div></p>
+<p><strong>Response:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="p">{</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">    </span><span class="nt">&quot;hash&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;abc123def456...&quot;</span><span class="p">,</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="w">    </span><span class="nt">&quot;original_content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[{...}, {...}, ...]&quot;</span><span class="p">,</span>
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="w">    </span><span class="nt">&quot;original_item_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span>
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="w">    </span><span class="nt">&quot;tool_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;search_api&quot;</span>
+<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="p">}</span>
+</code></pre></div></p>
+<hr />
+<h3 id="ccr-phase-3-tool-injection">CCR Phase 3: Tool Injection<a class="headerlink" href="#ccr-phase-3-tool-injection" title="Permanent link">&para;</a></h3>
+<p>When compression happens, Cassandra injects retrieval instructions into the LLM context.</p>
+<p><strong>Method A: System Message Injection</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>## Compressed Context Available
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>The following tool outputs have been compressed. If you need more detail,
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>call the retrieve_compressed tool with the hash.
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>Available: hash=abc123 (1000→20 items from search_api)
+</code></pre></div></p>
+<p><strong>Method B: MCP Tool Registration (Hybrid)</strong>
+When running as MCP server, Cassandra exposes retrieval as a tool:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="p">{</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cassandra_retrieve&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="w">    </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Retrieve more items from compressed tool output&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="w">    </span><span class="nt">&quot;inputSchema&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="w">        </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a><span class="w">        </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="w">            </span><span class="nt">&quot;hash&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">}</span>
+<a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a><span class="w">        </span><span class="p">},</span>
+<a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a><span class="w">        </span><span class="nt">&quot;required&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;hash&quot;</span><span class="p">]</span>
+<a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Marker Injection:</strong>
+Compressed content includes retrieval markers:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="p">{</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="w">    </span><span class="nt">&quot;__cassandra_compressed&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="w">    </span><span class="nt">&quot;__cassandra_hash&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;abc123def456&quot;</span><span class="p">,</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="w">    </span><span class="nt">&quot;__cassandra_stats&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="w">        </span><span class="nt">&quot;original_items&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span>
+<a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a><span class="w">        </span><span class="nt">&quot;kept_items&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
+<a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a><span class="w">        </span><span class="nt">&quot;errors_preserved&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
+<a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a><span class="w">    </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">...</span><span class="p">]</span>
+<a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a><span class="p">}</span>
+</code></pre></div></p>
+<hr />
+<h3 id="ccr-phase-4-feedback-loop">CCR Phase 4: Feedback Loop<a class="headerlink" href="#ccr-phase-4-feedback-loop" title="Permanent link">&para;</a></h3>
+<p><strong>Location:</strong> <code>cassandra/cache/compression_feedback.py</code></p>
+<p>The feedback system learns from retrieval patterns to improve future compression.</p>
+<p><strong>Tracked Patterns per Tool:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="nd">@dataclass</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">ToolPattern</span><span class="p">:</span>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>    <span class="n">tool_name</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>    <span class="n">total_compressions</span><span class="p">:</span> <span class="nb">int</span>      <span class="c1"># Times we compressed this tool</span>
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a>    <span class="n">total_retrievals</span><span class="p">:</span> <span class="nb">int</span>        <span class="c1"># Times LLM asked for more</span>
+<a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a>    <span class="n">full_retrievals</span><span class="p">:</span> <span class="nb">int</span>         <span class="c1"># Retrieved everything (all retrievals — hash-only)</span>
+<a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a>    <span class="n">search_retrievals</span><span class="p">:</span> <span class="nb">int</span>       <span class="c1"># Legacy; always 0 (retrieval is hash-only, no search)</span>
+<a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a>    <span class="n">common_queries</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>   <span class="c1"># Legacy query-pattern frequency (no longer populated)</span>
+<a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a>    <span class="n">queried_fields</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>   <span class="c1"># Legacy queried-field frequency (no longer populated)</span>
+</code></pre></div></p>
+<p><strong>Key Metrics:</strong>
+- <strong>Retrieval Rate</strong>: <code>total_retrievals / total_compressions</code>
+  - High (&gt;50%) → Compressing too aggressively
+  - Low (&lt;20%) → Compression is effective
+- <strong>Full Retrieval Rate</strong>: <code>full_retrievals / total_retrievals</code>
+  - High (&gt;80%) → Data is unique, consider skipping compression</p>
+<p><strong>Compression Hints:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="nd">@dataclass</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">CompressionHints</span><span class="p">:</span>
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>    <span class="n">max_items</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">15</span>          <span class="c1"># Target item count</span>
+<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>    <span class="n">suggested_items</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>  <span class="c1"># Calculated optimal</span>
+<a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a>    <span class="n">skip_compression</span><span class="p">:</span> <span class="nb">bool</span>       <span class="c1"># Don&#39;t compress at all</span>
+<a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a>    <span class="n">preserve_fields</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>   <span class="c1"># Always keep these fields</span>
+<a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a>    <span class="n">aggressiveness</span><span class="p">:</span> <span class="nb">float</span>        <span class="c1"># 0.0 = aggressive, 1.0 = conservative</span>
+<a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a>    <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span>                  <span class="c1"># Explanation</span>
+</code></pre></div></p>
+<p><strong>Feedback-Driven Adjustment:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="c1"># In SmartCrusher._crush_array()</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">use_feedback_hints</span> <span class="ow">and</span> <span class="n">tool_name</span><span class="p">:</span>
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>    <span class="n">feedback</span> <span class="o">=</span> <span class="n">get_compression_feedback</span><span class="p">()</span>
+<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>    <span class="n">hints</span> <span class="o">=</span> <span class="n">feedback</span><span class="o">.</span><span class="n">get_compression_hints</span><span class="p">(</span><span class="n">tool_name</span><span class="p">)</span>
+<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>
+<a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a>    <span class="k">if</span> <span class="n">hints</span><span class="o">.</span><span class="n">skip_compression</span><span class="p">:</span>
+<a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a>        <span class="k">return</span> <span class="n">items</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;skip:feedback(</span><span class="si">{</span><span class="n">hints</span><span class="o">.</span><span class="n">reason</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="kc">None</span>
+<a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a>
+<a id="__codelineno-27-9" name="__codelineno-27-9" href="#__codelineno-27-9"></a>    <span class="k">if</span> <span class="n">hints</span><span class="o">.</span><span class="n">suggested_items</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-27-10" name="__codelineno-27-10" href="#__codelineno-27-10"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">max_items_after_crush</span> <span class="o">=</span> <span class="n">hints</span><span class="o">.</span><span class="n">suggested_items</span>
+</code></pre></div></p>
+<p><strong>Feedback Endpoints:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/v1/feedback</code></td>
+<td>GET</td>
+<td>Get all learned patterns</td>
+</tr>
+<tr>
+<td><code>/v1/feedback/{tool_name}</code></td>
+<td>GET</td>
+<td>Get hints for specific tool</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example Response:</strong>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="p">{</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="w">    </span><span class="nt">&quot;total_compressions&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">150</span><span class="p">,</span>
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="w">    </span><span class="nt">&quot;total_retrievals&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">23</span><span class="p">,</span>
+<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="w">    </span><span class="nt">&quot;global_retrieval_rate&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.15</span><span class="p">,</span>
+<a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a><span class="w">    </span><span class="nt">&quot;tools_tracked&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a><span class="w">    </span><span class="nt">&quot;tool_patterns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a><span class="w">        </span><span class="nt">&quot;search_api&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a><span class="w">            </span><span class="nt">&quot;compressions&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">50</span><span class="p">,</span>
+<a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a><span class="w">            </span><span class="nt">&quot;retrievals&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a><span class="w">            </span><span class="nt">&quot;retrieval_rate&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.10</span><span class="p">,</span>
+<a id="__codelineno-28-11" name="__codelineno-28-11" href="#__codelineno-28-11"></a><span class="w">            </span><span class="nt">&quot;full_rate&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.20</span><span class="p">,</span>
+<a id="__codelineno-28-12" name="__codelineno-28-12" href="#__codelineno-28-12"></a><span class="w">            </span><span class="nt">&quot;search_rate&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.80</span><span class="p">,</span>
+<a id="__codelineno-28-13" name="__codelineno-28-13" href="#__codelineno-28-13"></a><span class="w">            </span><span class="nt">&quot;common_queries&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;status:error&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;level:critical&quot;</span><span class="p">],</span>
+<a id="__codelineno-28-14" name="__codelineno-28-14" href="#__codelineno-28-14"></a><span class="w">            </span><span class="nt">&quot;queried_fields&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;level&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;message&quot;</span><span class="p">]</span>
+<a id="__codelineno-28-15" name="__codelineno-28-15" href="#__codelineno-28-15"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-28-16" name="__codelineno-28-16" href="#__codelineno-28-16"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-28-17" name="__codelineno-28-17" href="#__codelineno-28-17"></a><span class="p">}</span>
+</code></pre></div></p>
+<hr />
+<h3 id="ccr-phase-5-response-handler-automatic-tool-call-handling">CCR Phase 5: Response Handler (Automatic Tool Call Handling)<a class="headerlink" href="#ccr-phase-5-response-handler-automatic-tool-call-handling" title="Permanent link">&para;</a></h3>
+<p><strong>Location:</strong> <code>cassandra/ccr/response_handler.py</code></p>
+<p><strong>The Problem:</strong> When the proxy injects the <code>cassandra_retrieve</code> tool, the LLM might call it. But who handles that tool call? Without response handling, the tool call would go back to the client unhandled.</p>
+<p><strong>The Solution:</strong> The Response Handler intercepts LLM responses, detects CCR tool calls, executes retrievals automatically, and continues the conversation until the LLM produces a final response.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>┌──────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>│  RESPONSE HANDLER FLOW                                           │
+<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>│                                                                   │
+<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>│  1. LLM Response arrives                                         │
+<a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>│     └─ Contains: tool_use(cassandra_retrieve, hash=abc123)       │
+<a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>│                                                                   │
+<a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a>│  2. Handler detects CCR tool call                                │
+<a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a>│     └─ Extracts hash                                             │
+<a id="__codelineno-29-9" name="__codelineno-29-9" href="#__codelineno-29-9"></a>│                                                                   │
+<a id="__codelineno-29-10" name="__codelineno-29-10" href="#__codelineno-29-10"></a>│  3. Handler executes retrieval                                   │
+<a id="__codelineno-29-11" name="__codelineno-29-11" href="#__codelineno-29-11"></a>│     └─ By hash: store.retrieve(hash) → full original content    │
+<a id="__codelineno-29-12" name="__codelineno-29-12" href="#__codelineno-29-12"></a>│                                                                   │
+<a id="__codelineno-29-13" name="__codelineno-29-13" href="#__codelineno-29-13"></a>│  4. Handler continues conversation                               │
+<a id="__codelineno-29-14" name="__codelineno-29-14" href="#__codelineno-29-14"></a>│     └─ Adds tool result to messages                             │
+<a id="__codelineno-29-15" name="__codelineno-29-15" href="#__codelineno-29-15"></a>│     └─ Makes another API call                                   │
+<a id="__codelineno-29-16" name="__codelineno-29-16" href="#__codelineno-29-16"></a>│                                                                   │
+<a id="__codelineno-29-17" name="__codelineno-29-17" href="#__codelineno-29-17"></a>│  5. Repeat until no CCR tool calls                              │
+<a id="__codelineno-29-18" name="__codelineno-29-18" href="#__codelineno-29-18"></a>│     └─ Max 3 rounds (configurable)                              │
+<a id="__codelineno-29-19" name="__codelineno-29-19" href="#__codelineno-29-19"></a>│                                                                   │
+<a id="__codelineno-29-20" name="__codelineno-29-20" href="#__codelineno-29-20"></a>│  6. Return final response to client                             │
+<a id="__codelineno-29-21" name="__codelineno-29-21" href="#__codelineno-29-21"></a>└──────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+<p><strong>Key Classes:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="nd">@dataclass</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">CCRToolCall</span><span class="p">:</span>
+<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>    <span class="n">tool_call_id</span><span class="p">:</span> <span class="nb">str</span>      <span class="c1"># For matching response</span>
+<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a>    <span class="n">hash_key</span><span class="p">:</span> <span class="nb">str</span>          <span class="c1"># CCR hash to retrieve</span>
+<a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>
+<a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a><span class="nd">@dataclass</span>
+<a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">CCRToolResult</span><span class="p">:</span>
+<a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a>    <span class="n">tool_call_id</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a>    <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>           <span class="c1"># Retrieved data as JSON</span>
+<a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a>    <span class="n">success</span><span class="p">:</span> <span class="nb">bool</span>
+<a id="__codelineno-30-11" name="__codelineno-30-11" href="#__codelineno-30-11"></a>    <span class="n">items_retrieved</span><span class="p">:</span> <span class="nb">int</span>
+<a id="__codelineno-30-12" name="__codelineno-30-12" href="#__codelineno-30-12"></a>
+<a id="__codelineno-30-13" name="__codelineno-30-13" href="#__codelineno-30-13"></a><span class="k">class</span><span class="w"> </span><span class="nc">CCRResponseHandler</span><span class="p">:</span>
+<a id="__codelineno-30-14" name="__codelineno-30-14" href="#__codelineno-30-14"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">handle_response</span><span class="p">(</span>
+<a id="__codelineno-30-15" name="__codelineno-30-15" href="#__codelineno-30-15"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-30-16" name="__codelineno-30-16" href="#__codelineno-30-16"></a>        <span class="n">response</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>           <span class="c1"># Initial LLM response</span>
+<a id="__codelineno-30-17" name="__codelineno-30-17" href="#__codelineno-30-17"></a>        <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>           <span class="c1"># Conversation history</span>
+<a id="__codelineno-30-18" name="__codelineno-30-18" href="#__codelineno-30-18"></a>        <span class="n">tools</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>              <span class="c1"># Tool definitions</span>
+<a id="__codelineno-30-19" name="__codelineno-30-19" href="#__codelineno-30-19"></a>        <span class="n">api_call_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>    <span class="c1"># Function to make API calls</span>
+<a id="__codelineno-30-20" name="__codelineno-30-20" href="#__codelineno-30-20"></a>        <span class="n">provider</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>            <span class="c1"># &quot;anthropic&quot; or &quot;openai&quot;</span>
+<a id="__codelineno-30-21" name="__codelineno-30-21" href="#__codelineno-30-21"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-30-22" name="__codelineno-30-22" href="#__codelineno-30-22"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle CCR tool calls until final response.&quot;&quot;&quot;</span>
+</code></pre></div>
+<p><strong>Streaming Support:</strong></p>
+<p>The handler also supports streaming responses via <code>StreamingCCRHandler</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">StreamingCCRBuffer</span><span class="p">:</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Buffers streaming chunks to detect CCR tool calls.&quot;&quot;&quot;</span>
+<a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>    <span class="n">chunks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]</span>
+<a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a>    <span class="n">detected_ccr</span><span class="p">:</span> <span class="nb">bool</span>
+<a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a>
+<a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">StreamingCCRHandler</span><span class="p">:</span>
+<a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles CCR in streaming responses.&quot;&quot;&quot;</span>
+<a id="__codelineno-31-8" name="__codelineno-31-8" href="#__codelineno-31-8"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">process_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">messages</span><span class="p">,</span> <span class="n">tools</span><span class="p">,</span> <span class="n">api_call_fn</span><span class="p">):</span>
+<a id="__codelineno-31-9" name="__codelineno-31-9" href="#__codelineno-31-9"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Yields chunks, switching to buffered mode if CCR detected.&quot;&quot;&quot;</span>
+</code></pre></div>
+<hr />
+<h3 id="ccr-phase-6-context-tracker-multi-turn-awareness">CCR Phase 6: Context Tracker (Multi-Turn Awareness)<a class="headerlink" href="#ccr-phase-6-context-tracker-multi-turn-awareness" title="Permanent link">&para;</a></h3>
+<p><strong>Location:</strong> <code>cassandra/ccr/context_tracker.py</code></p>
+<p><strong>The Problem:</strong> In multi-turn conversations, earlier compressed data might become relevant later. Without tracking, the LLM has "context amnesia" - it can't reference data that was compressed in turn 1 when answering a question in turn 5.</p>
+<p><strong>The Solution:</strong> The Context Tracker maintains awareness of all compressed content across the conversation and can proactively expand relevant data when a new query might need it.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>┌──────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>│  CONTEXT TRACKER FLOW                                            │
+<a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>│                                                                   │
+<a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a>│  Turn 1: Search returns 100 files → compressed to 10            │
+<a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a>│          Tracker stores: hash=abc123, sample=&quot;auth.py, db.py&quot;   │
+<a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a>│                                                                   │
+<a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a>│  Turn 5: User asks &quot;What about the authentication middleware?&quot;  │
+<a id="__codelineno-32-8" name="__codelineno-32-8" href="#__codelineno-32-8"></a>│          Tracker analyzes query:                                 │
+<a id="__codelineno-32-9" name="__codelineno-32-9" href="#__codelineno-32-9"></a>│          - &quot;authentication&quot; matches &quot;auth.py&quot; in sample         │
+<a id="__codelineno-32-10" name="__codelineno-32-10" href="#__codelineno-32-10"></a>│          - Relevance score: 0.7 (above threshold)               │
+<a id="__codelineno-32-11" name="__codelineno-32-11" href="#__codelineno-32-11"></a>│                                                                   │
+<a id="__codelineno-32-12" name="__codelineno-32-12" href="#__codelineno-32-12"></a>│  Proactive Expansion:                                           │
+<a id="__codelineno-32-13" name="__codelineno-32-13" href="#__codelineno-32-13"></a>│          - Retrieves abc123 before LLM responds                 │
+<a id="__codelineno-32-14" name="__codelineno-32-14" href="#__codelineno-32-14"></a>│          - Adds expanded context to request                     │
+<a id="__codelineno-32-15" name="__codelineno-32-15" href="#__codelineno-32-15"></a>│                                                                   │
+<a id="__codelineno-32-16" name="__codelineno-32-16" href="#__codelineno-32-16"></a>│  Result: LLM sees full file list, can answer accurately         │
+<a id="__codelineno-32-17" name="__codelineno-32-17" href="#__codelineno-32-17"></a>└──────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+<p><strong>Key Classes:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="nd">@dataclass</span>
+<a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">CompressedContext</span><span class="p">:</span>
+<a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>    <span class="n">hash_key</span><span class="p">:</span> <span class="nb">str</span>              <span class="c1"># CCR hash</span>
+<a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a>    <span class="n">turn_number</span><span class="p">:</span> <span class="nb">int</span>           <span class="c1"># When compression happened</span>
+<a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a>    <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span>           <span class="c1"># For age-based filtering</span>
+<a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a>    <span class="n">tool_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>      <span class="c1"># Which tool was compressed</span>
+<a id="__codelineno-33-7" name="__codelineno-33-7" href="#__codelineno-33-7"></a>    <span class="n">original_item_count</span><span class="p">:</span> <span class="nb">int</span>
+<a id="__codelineno-33-8" name="__codelineno-33-8" href="#__codelineno-33-8"></a>    <span class="n">compressed_item_count</span><span class="p">:</span> <span class="nb">int</span>
+<a id="__codelineno-33-9" name="__codelineno-33-9" href="#__codelineno-33-9"></a>    <span class="n">query_context</span><span class="p">:</span> <span class="nb">str</span>         <span class="c1"># User query at compression time</span>
+<a id="__codelineno-33-10" name="__codelineno-33-10" href="#__codelineno-33-10"></a>    <span class="n">sample_content</span><span class="p">:</span> <span class="nb">str</span>        <span class="c1"># Preview for relevance matching</span>
+<a id="__codelineno-33-11" name="__codelineno-33-11" href="#__codelineno-33-11"></a>
+<a id="__codelineno-33-12" name="__codelineno-33-12" href="#__codelineno-33-12"></a><span class="nd">@dataclass</span>
+<a id="__codelineno-33-13" name="__codelineno-33-13" href="#__codelineno-33-13"></a><span class="k">class</span><span class="w"> </span><span class="nc">ExpansionRecommendation</span><span class="p">:</span>
+<a id="__codelineno-33-14" name="__codelineno-33-14" href="#__codelineno-33-14"></a>    <span class="n">hash_key</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-33-15" name="__codelineno-33-15" href="#__codelineno-33-15"></a>    <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span>                <span class="c1"># Human-readable explanation</span>
+<a id="__codelineno-33-16" name="__codelineno-33-16" href="#__codelineno-33-16"></a>    <span class="n">relevance_score</span><span class="p">:</span> <span class="nb">float</span>     <span class="c1"># 0-1, higher = more relevant</span>
+<a id="__codelineno-33-17" name="__codelineno-33-17" href="#__codelineno-33-17"></a>    <span class="c1"># Expansion always restores the full original content (retrieval is by hash).</span>
+<a id="__codelineno-33-18" name="__codelineno-33-18" href="#__codelineno-33-18"></a>
+<a id="__codelineno-33-19" name="__codelineno-33-19" href="#__codelineno-33-19"></a><span class="k">class</span><span class="w"> </span><span class="nc">ContextTracker</span><span class="p">:</span>
+<a id="__codelineno-33-20" name="__codelineno-33-20" href="#__codelineno-33-20"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">track_compression</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hash_key</span><span class="p">,</span> <span class="n">turn_number</span><span class="p">,</span> <span class="o">...</span><span class="p">):</span>
+<a id="__codelineno-33-21" name="__codelineno-33-21" href="#__codelineno-33-21"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Track a compression event.&quot;&quot;&quot;</span>
+<a id="__codelineno-33-22" name="__codelineno-33-22" href="#__codelineno-33-22"></a>
+<a id="__codelineno-33-23" name="__codelineno-33-23" href="#__codelineno-33-23"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">analyze_query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">ExpansionRecommendation</span><span class="p">]:</span>
+<a id="__codelineno-33-24" name="__codelineno-33-24" href="#__codelineno-33-24"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Find relevant compressed contexts for a query.&quot;&quot;&quot;</span>
+<a id="__codelineno-33-25" name="__codelineno-33-25" href="#__codelineno-33-25"></a>
+<a id="__codelineno-33-26" name="__codelineno-33-26" href="#__codelineno-33-26"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">execute_expansions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recommendations</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<a id="__codelineno-33-27" name="__codelineno-33-27" href="#__codelineno-33-27"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute recommended expansions.&quot;&quot;&quot;</span>
+</code></pre></div>
+<p><strong>Relevance Calculation:</strong></p>
+<p>The tracker uses simple but effective heuristics:</p>
+<ol>
+<li><strong>Keyword overlap with sample content</strong> - Extract keywords from query, match against compressed content preview</li>
+<li><strong>Keyword overlap with original query</strong> - Match against the query that triggered compression</li>
+<li><strong>Tool name relevance</strong> - File operations more likely to need expansion for "file", "where", "find" queries</li>
+<li><strong>Age discount</strong> - Older contexts get lower scores</li>
+</ol>
+<p><strong>Configuration:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="nd">@dataclass</span>
+<a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">ContextTrackerConfig</span><span class="p">:</span>
+<a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a>    <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a>    <span class="n">max_tracked_contexts</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span>      <span class="c1"># LRU eviction</span>
+<a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a>    <span class="n">relevance_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.3</span>     <span class="c1"># Min score to recommend</span>
+<a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a>    <span class="n">max_context_age_seconds</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">300</span> <span class="c1"># 5 minutes</span>
+<a id="__codelineno-34-7" name="__codelineno-34-7" href="#__codelineno-34-7"></a>    <span class="n">proactive_expansion</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<a id="__codelineno-34-8" name="__codelineno-34-8" href="#__codelineno-34-8"></a>    <span class="n">max_proactive_expansions</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span>    <span class="c1"># Per query</span>
+</code></pre></div>
+<hr />
+<h3 id="why-ccr-is-a-moat">Why CCR is a Moat<a class="headerlink" href="#why-ccr-is-a-moat" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Reversible</strong>: No permanent information loss. Worst case = retrieve everything.</li>
+<li><strong>Transparent</strong>: LLM knows it can ask for more data.</li>
+<li><strong>Automatic</strong>: Response Handler executes retrievals without client intervention.</li>
+<li><strong>Context-Aware</strong>: Context Tracker prevents multi-turn amnesia.</li>
+<li><strong>Feedback Loop</strong>: Learn from actual needs, not guesses.</li>
+<li><strong>Network Effect</strong>: Retrieval patterns across users improve compression for everyone.</li>
+<li><strong>Zero-Risk</strong>: If compression fails, instant fallback to original data.</li>
+</ol>
+<hr />
+<h2 id="image-compression-architecture">Image Compression Architecture<a class="headerlink" href="#image-compression-architecture" title="Permanent link">&para;</a></h2>
+<p>Vision models charge by the token, and images are expensive (765-2900 tokens for a typical image). Cassandra's image compression uses a <strong>trained ML router</strong> to automatically select the optimal compression technique.</p>
+<h3 id="the-key-insight_1">The Key Insight<a class="headerlink" href="#the-key-insight_1" title="Permanent link">&para;</a></h3>
+<p>Not all image queries need full resolution:
+- "What is this?" → Low detail is fine (87% savings)
+- "Count the whiskers" → Need full detail (0% savings)
+- "Read the sign" → Could convert to text (99% savings)</p>
+<h3 id="how-it-works">How It Works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>User: [image] + &quot;What animal is this?&quot;
+<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>           ↓
+<a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>┌─────────────────────────────────┐
+<a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a>│  1. Query Analysis              │
+<a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a>│  TrainedRouter (MiniLM)         │
+<a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a>│  Classifies → full_low          │
+<a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a>└─────────────────────────────────┘
+<a id="__codelineno-35-8" name="__codelineno-35-8" href="#__codelineno-35-8"></a>           ↓
+<a id="__codelineno-35-9" name="__codelineno-35-9" href="#__codelineno-35-9"></a>┌─────────────────────────────────┐
+<a id="__codelineno-35-10" name="__codelineno-35-10" href="#__codelineno-35-10"></a>│  2. Image Analysis (Optional)   │
+<a id="__codelineno-35-11" name="__codelineno-35-11" href="#__codelineno-35-11"></a>│  SigLIP checks:                 │
+<a id="__codelineno-35-12" name="__codelineno-35-12" href="#__codelineno-35-12"></a>│  - Has text? Is complex?        │
+<a id="__codelineno-35-13" name="__codelineno-35-13" href="#__codelineno-35-13"></a>│  - Fine details needed?         │
+<a id="__codelineno-35-14" name="__codelineno-35-14" href="#__codelineno-35-14"></a>└─────────────────────────────────┘
+<a id="__codelineno-35-15" name="__codelineno-35-15" href="#__codelineno-35-15"></a>           ↓
+<a id="__codelineno-35-16" name="__codelineno-35-16" href="#__codelineno-35-16"></a>┌─────────────────────────────────┐
+<a id="__codelineno-35-17" name="__codelineno-35-17" href="#__codelineno-35-17"></a>│  3. Apply Compression           │
+<a id="__codelineno-35-18" name="__codelineno-35-18" href="#__codelineno-35-18"></a>│  OpenAI: detail=&quot;low&quot;           │
+<a id="__codelineno-35-19" name="__codelineno-35-19" href="#__codelineno-35-19"></a>│  Anthropic: Resize to 512px     │
+<a id="__codelineno-35-20" name="__codelineno-35-20" href="#__codelineno-35-20"></a>│  Google: Resize to 768px        │
+<a id="__codelineno-35-21" name="__codelineno-35-21" href="#__codelineno-35-21"></a>└─────────────────────────────────┘
+<a id="__codelineno-35-22" name="__codelineno-35-22" href="#__codelineno-35-22"></a>           ↓
+<a id="__codelineno-35-23" name="__codelineno-35-23" href="#__codelineno-35-23"></a>Compressed request → LLM → Response
+</code></pre></div>
+<h3 id="the-trained-router">The Trained Router<a class="headerlink" href="#the-trained-router" title="Permanent link">&para;</a></h3>
+<p>A fine-tuned MiniLM classifier hosted on HuggingFace:</p>
+<ul>
+<li><strong>Model</strong>: <code>Sarthak-47/technique-router</code></li>
+<li><strong>Size</strong>: ~128MB (downloaded once, cached)</li>
+<li><strong>Accuracy</strong>: 93.7% on 1,157 training examples</li>
+<li><strong>Latency</strong>: ~10ms CPU, ~2ms GPU</li>
+</ul>
+<p>The router learns from examples like:
+| Query | Technique |
+|-------|-----------|
+| "What is this?" | <code>full_low</code> |
+| "Count the items" | <code>preserve</code> |
+| "Read the text" | <code>transcode</code> |
+| "What's in the corner?" | <code>crop</code> |</p>
+<h3 id="provider-specific-compression">Provider-Specific Compression<a class="headerlink" href="#provider-specific-compression" title="Permanent link">&para;</a></h3>
+<p>Each provider handles images differently:</p>
+<table>
+<thead>
+<tr>
+<th>Provider</th>
+<th>Method</th>
+<th>Savings</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>OpenAI</strong></td>
+<td><code>detail="low"</code> parameter</td>
+<td>~87%</td>
+</tr>
+<tr>
+<td><strong>Anthropic</strong></td>
+<td>PIL resize to 512px</td>
+<td>~75%</td>
+</tr>
+<tr>
+<td><strong>Google</strong></td>
+<td>PIL resize to 768px (tile-optimized)</td>
+<td>~75%</td>
+</tr>
+</tbody>
+</table>
+<h3 id="integration-points">Integration Points<a class="headerlink" href="#integration-points" title="Permanent link">&para;</a></h3>
+<p>Image compression runs in the proxy <strong>before</strong> text compression:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>Request arrives
+<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>      ↓
+<a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a>[Image Compression] ← NEW
+<a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a>      ↓
+<a id="__codelineno-36-5" name="__codelineno-36-5" href="#__codelineno-36-5"></a>[Transform Pipeline: Cache Aligner → Smart Crusher → ...]
+<a id="__codelineno-36-6" name="__codelineno-36-6" href="#__codelineno-36-6"></a>      ↓
+<a id="__codelineno-36-7" name="__codelineno-36-7" href="#__codelineno-36-7"></a>Forward to LLM
+</code></pre></div>
+<p>This ensures images are compressed first, then text compression (CCR, SmartCrusher) handles the rest.</p>
+<h3 id="code-location">Code Location<a class="headerlink" href="#code-location" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>cassandra/
+<a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>├── image/
+<a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a>│   ├── __init__.py         # Public API
+<a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a>│   ├── compressor.py       # ImageCompressor class
+<a id="__codelineno-37-5" name="__codelineno-37-5" href="#__codelineno-37-5"></a>│   └── trained_router.py   # TrainedRouter (HuggingFace model)
+<a id="__codelineno-37-6" name="__codelineno-37-6" href="#__codelineno-37-6"></a>├── proxy/
+<a id="__codelineno-37-7" name="__codelineno-37-7" href="#__codelineno-37-7"></a>│   └── server.py           # Integration point
+</code></pre></div>
+<hr />
+<h2 id="file-structure-explained">File Structure Explained<a class="headerlink" href="#file-structure-explained" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>cassandra/
+<a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>├── __init__.py          # Public exports
+<a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>├── client.py            # CassandraClient - the main wrapper
+<a id="__codelineno-38-4" name="__codelineno-38-4" href="#__codelineno-38-4"></a>├── config.py            # All configuration dataclasses
+<a id="__codelineno-38-5" name="__codelineno-38-5" href="#__codelineno-38-5"></a>├── parser.py            # Message → Block decomposition
+<a id="__codelineno-38-6" name="__codelineno-38-6" href="#__codelineno-38-6"></a>├── tokenizer.py         # Token counting abstraction
+<a id="__codelineno-38-7" name="__codelineno-38-7" href="#__codelineno-38-7"></a>├── utils.py             # Hashing, markers, helpers
+<a id="__codelineno-38-8" name="__codelineno-38-8" href="#__codelineno-38-8"></a>│
+<a id="__codelineno-38-9" name="__codelineno-38-9" href="#__codelineno-38-9"></a>├── providers/
+<a id="__codelineno-38-10" name="__codelineno-38-10" href="#__codelineno-38-10"></a>│   ├── base.py          # Provider/TokenCounter protocols
+<a id="__codelineno-38-11" name="__codelineno-38-11" href="#__codelineno-38-11"></a>│   ├── openai.py        # OpenAI-specific (tiktoken)
+<a id="__codelineno-38-12" name="__codelineno-38-12" href="#__codelineno-38-12"></a>│   └── anthropic.py     # Anthropic-specific
+<a id="__codelineno-38-13" name="__codelineno-38-13" href="#__codelineno-38-13"></a>│
+<a id="__codelineno-38-14" name="__codelineno-38-14" href="#__codelineno-38-14"></a>├── transforms/
+<a id="__codelineno-38-15" name="__codelineno-38-15" href="#__codelineno-38-15"></a>│   ├── base.py              # Transform protocol
+<a id="__codelineno-38-16" name="__codelineno-38-16" href="#__codelineno-38-16"></a>│   ├── pipeline.py          # Orchestrates all transforms
+<a id="__codelineno-38-17" name="__codelineno-38-17" href="#__codelineno-38-17"></a>│   ├── cache_aligner.py     # Date extraction for caching
+<a id="__codelineno-38-18" name="__codelineno-38-18" href="#__codelineno-38-18"></a>│   ├── smart_crusher.py     # Statistical compression (default)
+<a id="__codelineno-38-19" name="__codelineno-38-19" href="#__codelineno-38-19"></a>│   ├── code_compressor.py   # AST-aware code compression (tree-sitter)
+<a id="__codelineno-38-20" name="__codelineno-38-20" href="#__codelineno-38-20"></a>│   └── (legacy llmlingua_compressor.py removed — see [ml] extra for Kompress;
+<a id="__codelineno-38-21" name="__codelineno-38-21" href="#__codelineno-38-21"></a>│        rolling_window.py / intelligent_context.py / scoring.py / tool_crusher.py
+<a id="__codelineno-38-22" name="__codelineno-38-22" href="#__codelineno-38-22"></a>│        removed — context management is now live-zone-only)
+<a id="__codelineno-38-23" name="__codelineno-38-23" href="#__codelineno-38-23"></a>│
+<a id="__codelineno-38-24" name="__codelineno-38-24" href="#__codelineno-38-24"></a>├── cache/               # CCR Architecture - Caching &amp; Storage
+<a id="__codelineno-38-25" name="__codelineno-38-25" href="#__codelineno-38-25"></a>│   ├── compression_store.py    # Phase 1: Store original content
+<a id="__codelineno-38-26" name="__codelineno-38-26" href="#__codelineno-38-26"></a>│   ├── compression_feedback.py # Phase 4: Learn from retrievals
+<a id="__codelineno-38-27" name="__codelineno-38-27" href="#__codelineno-38-27"></a>│   ├── anthropic.py     # Anthropic cache optimizer
+<a id="__codelineno-38-28" name="__codelineno-38-28" href="#__codelineno-38-28"></a>│   ├── openai.py        # OpenAI cache optimizer
+<a id="__codelineno-38-29" name="__codelineno-38-29" href="#__codelineno-38-29"></a>│   ├── google.py        # Google cache optimizer
+<a id="__codelineno-38-30" name="__codelineno-38-30" href="#__codelineno-38-30"></a>│   └── dynamic_detector.py # Dynamic content detection
+<a id="__codelineno-38-31" name="__codelineno-38-31" href="#__codelineno-38-31"></a>│
+<a id="__codelineno-38-32" name="__codelineno-38-32" href="#__codelineno-38-32"></a>├── ccr/                 # CCR Architecture - Tool Injection &amp; Response Handling
+<a id="__codelineno-38-33" name="__codelineno-38-33" href="#__codelineno-38-33"></a>│   ├── __init__.py             # CCR module exports
+<a id="__codelineno-38-34" name="__codelineno-38-34" href="#__codelineno-38-34"></a>│   ├── tool_injection.py       # Phase 3: Inject retrieval tool
+<a id="__codelineno-38-35" name="__codelineno-38-35" href="#__codelineno-38-35"></a>│   ├── response_handler.py     # Phase 5: Handle CCR tool calls
+<a id="__codelineno-38-36" name="__codelineno-38-36" href="#__codelineno-38-36"></a>│   ├── context_tracker.py      # Phase 6: Multi-turn context tracking
+<a id="__codelineno-38-37" name="__codelineno-38-37" href="#__codelineno-38-37"></a>│   └── mcp_server.py           # MCP server for retrieval tool
+<a id="__codelineno-38-38" name="__codelineno-38-38" href="#__codelineno-38-38"></a>│
+<a id="__codelineno-38-39" name="__codelineno-38-39" href="#__codelineno-38-39"></a>├── relevance/           # Relevance scoring for compression
+<a id="__codelineno-38-40" name="__codelineno-38-40" href="#__codelineno-38-40"></a>│   ├── bm25.py          # BM25 keyword scorer
+<a id="__codelineno-38-41" name="__codelineno-38-41" href="#__codelineno-38-41"></a>│   ├── embedding.py     # Semantic embedding scorer
+<a id="__codelineno-38-42" name="__codelineno-38-42" href="#__codelineno-38-42"></a>│   └── hybrid.py        # Adaptive fusion scorer
+<a id="__codelineno-38-43" name="__codelineno-38-43" href="#__codelineno-38-43"></a>│
+<a id="__codelineno-38-44" name="__codelineno-38-44" href="#__codelineno-38-44"></a>├── storage/
+<a id="__codelineno-38-45" name="__codelineno-38-45" href="#__codelineno-38-45"></a>│   ├── base.py          # Storage protocol
+<a id="__codelineno-38-46" name="__codelineno-38-46" href="#__codelineno-38-46"></a>│   ├── sqlite.py        # SQLite implementation
+<a id="__codelineno-38-47" name="__codelineno-38-47" href="#__codelineno-38-47"></a>│   └── jsonl.py         # JSON Lines implementation
+<a id="__codelineno-38-48" name="__codelineno-38-48" href="#__codelineno-38-48"></a>│
+<a id="__codelineno-38-49" name="__codelineno-38-49" href="#__codelineno-38-49"></a>├── proxy/
+<a id="__codelineno-38-50" name="__codelineno-38-50" href="#__codelineno-38-50"></a>│   └── server.py        # Production HTTP proxy (CCR endpoints)
+<a id="__codelineno-38-51" name="__codelineno-38-51" href="#__codelineno-38-51"></a>│
+<a id="__codelineno-38-52" name="__codelineno-38-52" href="#__codelineno-38-52"></a>└── reporting/
+<a id="__codelineno-38-53" name="__codelineno-38-53" href="#__codelineno-38-53"></a>    └── generator.py     # HTML report generation
+</code></pre></div>
+<hr />
+<h2 id="key-design-decisions">Key Design Decisions<a class="headerlink" href="#key-design-decisions" title="Permanent link">&para;</a></h2>
+<h3 id="1-provider-agnostic">1. Provider-Agnostic<a class="headerlink" href="#1-provider-agnostic" title="Permanent link">&para;</a></h3>
+<p>Works with ANY OpenAI-compatible API:
+- OpenAI
+- Azure OpenAI
+- Anthropic
+- Groq
+- Together
+- Local models (Ollama)</p>
+<h3 id="2-deterministic-transforms">2. Deterministic Transforms<a class="headerlink" href="#2-deterministic-transforms" title="Permanent link">&para;</a></h3>
+<p>No LLM calls for compression. Everything is:
+- Statistical analysis
+- Pattern matching
+- Rule-based</p>
+<p>This means:
+- Predictable results
+- Fast (&lt;10ms overhead)
+- No added API costs</p>
+<h3 id="3-safety-first">3. Safety First<a class="headerlink" href="#3-safety-first" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Never modify user/assistant TEXT content</li>
+<li>Tool call + response are atomic (drop both or neither)</li>
+<li>Parse failures = no-op (return unchanged)</li>
+<li>Audit mode for testing before optimizing</li>
+</ul>
+<h3 id="4-smart-by-default">4. Smart by Default<a class="headerlink" href="#4-smart-by-default" title="Permanent link">&para;</a></h3>
+<ul>
+<li>SmartCrusher enabled (statistical, content-aware analysis — not naive rules)</li>
+<li>Conservative settings that preserve important data</li>
+</ul>
+<hr />
+<h2 id="what-makes-this-different">What Makes This Different?<a class="headerlink" href="#what-makes-this-different" title="Permanent link">&para;</a></h2>
+<h3 id="vs-summarization-llm-based-compression">vs. Summarization (LLM-based compression)<a class="headerlink" href="#vs-summarization-llm-based-compression" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Cassandra</th>
+<th>Summarization</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Deterministic</td>
+<td>Non-deterministic</td>
+</tr>
+<tr>
+<td>~10ms overhead</td>
+<td>~2-5 seconds overhead</td>
+</tr>
+<tr>
+<td>No extra API cost</td>
+<td>Costs money to summarize</td>
+</tr>
+<tr>
+<td>Preserves structure</td>
+<td>Loses structure</td>
+</tr>
+<tr>
+<td>Can't hallucinate</td>
+<td>Can hallucinate</td>
+</tr>
+</tbody>
+</table>
+<h3 id="vs-simple-truncation">vs. Simple Truncation<a class="headerlink" href="#vs-simple-truncation" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Cassandra</th>
+<th>Truncation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Keeps important data</td>
+<td>Loses end of data</td>
+</tr>
+<tr>
+<td>Statistical analysis</td>
+<td>No analysis</td>
+</tr>
+<tr>
+<td>Detects spikes</td>
+<td>Misses spikes</td>
+</tr>
+<tr>
+<td>Factors out constants</td>
+<td>Keeps redundancy</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="the-numbers-from-our-tests">The Numbers (From Our Tests)<a class="headerlink" href="#the-numbers-from-our-tests" title="Permanent link">&para;</a></h2>
+<p>Real-world SRE incident investigation:
+- <strong>5 tool calls</strong>: Metrics, logs, status, deployments, runbook
+- <strong>Original</strong>: 22,048 tokens
+- <strong>After SmartCrusher</strong>: 2,190 tokens
+- <strong>Reduction</strong>: 90%
+- <strong>Quality Score</strong>: 5.0/5 (no information loss)</p>
+<p>The model could still:
+- Identify the CPU spike (preserved by change point detection)
+- Reference specific error rates (kept in compressed data)
+- Provide correct remediation commands</p>
+<hr />
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<p><strong>Cassandra is a Context Budget Controller that:</strong></p>
+<ol>
+<li><strong>Wraps</strong> your existing LLM client</li>
+<li><strong>Analyzes</strong> your messages to find waste</li>
+<li><strong>Compresses</strong> tool outputs intelligently (not blindly)</li>
+<li><strong>Preserves</strong> important information (spikes, anomalies, unique data)</li>
+<li><strong>Logs</strong> everything for observability</li>
+<li><strong>Saves</strong> 70-90% of tokens on tool-heavy workloads</li>
+</ol>
+<p><strong>The key insight:</strong> Most tool output redundancy is <strong>statistical</strong> (repeated values, constant fields, similar messages). By analyzing the data first, we can compress intelligently without losing the information that matters.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.top", "navigation.instant", "content.code.copy", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,4808 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="The Context Optimization Layer for LLM Applications">
+      
+      
+      
+        <link rel="canonical" href="https://sarthak-47.github.io/cassandra/cli/">
+      
+      
+        <link rel="prev" href="../sdk/">
+      
+      
+        <link rel="next" href="../proxy/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>CLI - Cassandra</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cli-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Cassandra" class="md-header__button md-logo" aria-label="Cassandra" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Cassandra
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CLI
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Sarthak-47/cassandra" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Sarthak-47/cassandra
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../quickstart/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../ARCHITECTURE/" class="md-tabs__link">
+          
+  
+  
+  Core Concepts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../integration-guide/" class="md-tabs__link">
+          
+  
+  
+  Integrations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../benchmarks/" class="md-tabs__link">
+          
+  
+  
+  Benchmarks & Limitations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../troubleshooting/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Troubleshooting
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../learn/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Learn
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Cassandra" class="md-nav__button md-logo" aria-label="Cassandra" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Cassandra
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Sarthak-47/cassandra" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Sarthak-47/cassandra
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker-install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation (Docker)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../macos-deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    macOS Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Core Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compression/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compression
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../transforms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transforms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ccr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CCR (Compress-Cache-Retrieve)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../memory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Memory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../shared-context/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Shared Context
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integrations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integration-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Integration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../langchain/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LangChain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agno/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agno
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../strands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Strands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../typescript-sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sdk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#global-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global behavior
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Global behavior">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#entry-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Entry points
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#global-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#command-index" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command index
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#captured-help-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Captured --help output
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Captured --help output">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-help" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra --help
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#top-level-command-help-snapshots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Top-level command help snapshots
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cassandra-proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra proxy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cassandra-learn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra learn
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cassandra-perf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra perf
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cassandra-evals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra evals
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="cassandra evals">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-evals-memory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra evals memory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-evals-memory-v2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra evals memory-v2
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cassandra-memory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra memory
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="cassandra memory">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-memory-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra memory list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-memory-show-memory_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra memory show &lt;memory_id&gt;
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-memory-stats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra memory stats
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-memory-edit-memory_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra memory edit &lt;memory_id&gt;
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-memory-delete-memory_ids" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra memory delete &lt;memory_ids...&gt;
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-memory-prune" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra memory prune
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-memory-purge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra memory purge
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-memory-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra memory export
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-memory-import-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra memory import &lt;file&gt;
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cassandra-mcp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra mcp
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="cassandra mcp">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-mcp-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra mcp install
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-mcp-uninstall" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra mcp uninstall
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-mcp-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra mcp status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-mcp-serve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra mcp serve
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cassandra-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra install
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="cassandra install">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-install-apply-help" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra install apply --help
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-install-apply" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra install apply
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-install-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra install status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-install-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra install start
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-install-stop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra install stop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-install-restart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra install restart
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-install-remove" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra install remove
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cassandra-wrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra wrap
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="cassandra wrap">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#shared-semantics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shared semantics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-wrap-claude" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra wrap claude
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-wrap-codex" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra wrap codex
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-wrap-copilot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra wrap copilot
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-wrap-aider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra wrap aider
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-wrap-cursor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra wrap cursor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-wrap-openclaw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra wrap openclaw
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cassandra-unwrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra unwrap
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="cassandra unwrap">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-unwrap-openclaw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra unwrap openclaw
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docker-native-parity-matrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker-native parity matrix
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hidden-and-compatibility-only-command-paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hidden and compatibility-only command paths
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../proxy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Proxy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vertex/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vertex AI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../errors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Errors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../filesystem-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Filesystem Contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../persistent-installs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Persistent Installs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../network-diff-capture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Network Diff Capture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../image-compression/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image Compression
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../text-compression/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Text Compression
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks & Limitations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Benchmarks & Limitations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../LATENCY_BENCHMARKS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Latency Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../LIMITATIONS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Limitations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../learn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Learn
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#global-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global behavior
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Global behavior">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#entry-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Entry points
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#global-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#command-index" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command index
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#captured-help-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Captured --help output
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Captured --help output">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-help" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra --help
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#top-level-command-help-snapshots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Top-level command help snapshots
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cassandra-proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra proxy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cassandra-learn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra learn
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cassandra-perf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra perf
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cassandra-evals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra evals
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="cassandra evals">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-evals-memory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra evals memory
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-evals-memory-v2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra evals memory-v2
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cassandra-memory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra memory
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="cassandra memory">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-memory-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra memory list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-memory-show-memory_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra memory show &lt;memory_id&gt;
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-memory-stats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra memory stats
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-memory-edit-memory_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra memory edit &lt;memory_id&gt;
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-memory-delete-memory_ids" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra memory delete &lt;memory_ids...&gt;
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-memory-prune" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra memory prune
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-memory-purge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra memory purge
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-memory-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra memory export
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-memory-import-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra memory import &lt;file&gt;
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cassandra-mcp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra mcp
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="cassandra mcp">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-mcp-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra mcp install
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-mcp-uninstall" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra mcp uninstall
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-mcp-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra mcp status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-mcp-serve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra mcp serve
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cassandra-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra install
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="cassandra install">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-install-apply-help" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra install apply --help
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-install-apply" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra install apply
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-install-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra install status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-install-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra install start
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-install-stop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra install stop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-install-restart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra install restart
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-install-remove" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra install remove
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cassandra-wrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra wrap
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="cassandra wrap">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#shared-semantics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shared semantics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-wrap-claude" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra wrap claude
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-wrap-codex" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra wrap codex
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-wrap-copilot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra wrap copilot
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-wrap-aider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra wrap aider
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-wrap-cursor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra wrap cursor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-wrap-openclaw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra wrap openclaw
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cassandra-unwrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra unwrap
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="cassandra unwrap">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cassandra-unwrap-openclaw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cassandra unwrap openclaw
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docker-native-parity-matrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker-native parity matrix
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hidden-and-compatibility-only-command-paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hidden and compatibility-only command paths
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Sarthak-47/cassandra/edit/main/wiki/cli.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="cli-reference">CLI Reference<a class="headerlink" href="#cli-reference" title="Permanent link">&para;</a></h1>
+<p>This page is the authoritative reference for the <strong>Python Cassandra CLI</strong> exposed by the <code>cassandra</code> console script.</p>
+<h2 id="global-behavior">Global behavior<a class="headerlink" href="#global-behavior" title="Permanent link">&para;</a></h2>
+<h3 id="entry-points">Entry points<a class="headerlink" href="#entry-points" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Console script: <code>cassandra</code></li>
+<li>Python module entrypoint: <code>python -m cassandra.cli</code></li>
+</ul>
+<h3 id="global-options">Global options<a class="headerlink" href="#global-options" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Scope</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--help</code>, <code>-?</code></td>
+<td>root, groups, commands</td>
+<td>Show help and exit</td>
+</tr>
+<tr>
+<td><code>--version</code>, <code>-v</code></td>
+<td>root only</td>
+<td>Show the Cassandra version and exit</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><code>-v</code> is a <strong>root-level version alias</strong>. Inside subcommands such as <code>cassandra wrap claude -v</code>, <code>-v</code> keeps its subcommand meaning (<code>--verbose</code>), not version.</p>
+</blockquote>
+<h2 id="command-index">Command index<a class="headerlink" href="#command-index" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Purpose</th>
+<th>Docker-native parity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cassandra install ...</code></td>
+<td>Install and manage persistent deployments</td>
+<td><strong>python-native; Docker-native wrapper supports <code>persistent-docker</code> lifecycle subset</strong></td>
+</tr>
+<tr>
+<td><code>cassandra proxy</code></td>
+<td>Run the Cassandra proxy server</td>
+<td><strong>native in container</strong></td>
+</tr>
+<tr>
+<td><code>cassandra learn</code></td>
+<td>Learn from past tool-call failures</td>
+<td><strong>native in container</strong></td>
+</tr>
+<tr>
+<td><code>cassandra perf</code></td>
+<td>Summarize recent proxy performance</td>
+<td><strong>native in container</strong></td>
+</tr>
+<tr>
+<td><code>cassandra evals ...</code></td>
+<td>Run memory evaluation workflows</td>
+<td><strong>native in container</strong></td>
+</tr>
+<tr>
+<td><code>cassandra memory ...</code></td>
+<td>Inspect and manage stored memories</td>
+<td><strong>native in container</strong></td>
+</tr>
+<tr>
+<td><code>cassandra mcp ...</code></td>
+<td>Install, inspect, remove, or serve MCP integration</td>
+<td><strong>native in container</strong></td>
+</tr>
+<tr>
+<td><code>cassandra wrap claude</code></td>
+<td>Start proxy and launch Claude Code</td>
+<td><strong>host-bridged</strong></td>
+</tr>
+<tr>
+<td><code>cassandra wrap copilot</code></td>
+<td>Start proxy and launch GitHub Copilot CLI</td>
+<td><strong>python-native only</strong></td>
+</tr>
+<tr>
+<td><code>cassandra wrap codex</code></td>
+<td>Start proxy and launch Codex CLI</td>
+<td><strong>host-bridged</strong></td>
+</tr>
+<tr>
+<td><code>cassandra wrap aider</code></td>
+<td>Start proxy and launch Aider</td>
+<td><strong>host-bridged</strong></td>
+</tr>
+<tr>
+<td><code>cassandra wrap cursor</code></td>
+<td>Start proxy and print Cursor config guidance</td>
+<td><strong>host-bridged</strong></td>
+</tr>
+<tr>
+<td><code>cassandra wrap openclaw</code></td>
+<td>Install and configure the OpenClaw plugin</td>
+<td><strong>host-bridged</strong></td>
+</tr>
+<tr>
+<td><code>cassandra unwrap openclaw</code></td>
+<td>Disable the Cassandra OpenClaw plugin</td>
+<td><strong>host-bridged</strong></td>
+</tr>
+</tbody>
+</table>
+<h2 id="captured-help-output">Captured <code>--help</code> output<a class="headerlink" href="#captured-help-output" title="Permanent link">&para;</a></h2>
+<p>The sections below capture the current top-level help output from the live CLI.</p>
+<h3 id="cassandra-help"><code>cassandra --help</code><a class="headerlink" href="#cassandra-help" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Usage: cassandra [OPTIONS] COMMAND [ARGS]...
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  Cassandra - The Context Optimization Layer for LLM Applications.
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  Manage memories, run the optimization proxy, and analyze metrics.
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>  Examples:
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>      cassandra proxy              Start the optimization proxy
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>      cassandra memory list        List stored memories
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>      cassandra memory stats       Show memory statistics
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>Options:
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>  -v, --version  Show the version and exit.
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>  -?, --help     Show this message and exit.
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>Commands:
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>  evals   Memory evaluation commands.
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>  install Install and manage persistent Cassandra deployments.
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>  learn   Learn from past tool call failures to prevent future ones.
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>  mcp     MCP server for Claude Code integration.
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>  memory  Manage memories stored in Cassandra.
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>  perf    Analyze proxy performance from logs.
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>  proxy   Start the optimization proxy server.
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>  unwrap  Undo durable Cassandra wrapping for supported tools.
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>  wrap    Wrap CLI tools to run through Cassandra.
+</code></pre></div>
+<h3 id="top-level-command-help-snapshots">Top-level command help snapshots<a class="headerlink" href="#top-level-command-help-snapshots" title="Permanent link">&para;</a></h3>
+<details>
+<summary><code>cassandra proxy --help</code></summary>
+
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Usage: cassandra proxy [OPTIONS]
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>  Start the optimization proxy server.
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>  Examples:
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>      cassandra proxy                    Start proxy on port 8787
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>      cassandra proxy --port 8080        Start proxy on port 8080
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>      cassandra proxy --no-optimize      Passthrough mode (no optimization)
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>  Usage with Claude Code:
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>      ANTHROPIC_BASE_URL=http://localhost:8787 claude
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>  Usage with OpenAI-compatible clients:
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>      OPENAI_BASE_URL=http://localhost:8787/v1 your-app
+</code></pre></div>
+
+</details>
+
+<details>
+<summary><code>cassandra learn --help</code></summary>
+
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Usage: cassandra learn [OPTIONS]
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>  Learn from past tool call failures to prevent future ones.
+</code></pre></div>
+
+</details>
+
+<details>
+<summary><code>cassandra perf --help</code></summary>
+
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Usage: cassandra perf [OPTIONS]
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>  Analyze proxy performance from logs.
+</code></pre></div>
+
+</details>
+
+<details>
+<summary><code>cassandra evals --help</code></summary>
+
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Usage: cassandra evals [OPTIONS] COMMAND [ARGS]...
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>  Memory evaluation commands.
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>Commands:
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>  memory     Run LoCoMo memory evaluation benchmark.
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>  memory-v2  Run LoCoMo V2 evaluation with LLM-controlled memory tools.
+</code></pre></div>
+
+</details>
+
+<details>
+<summary><code>cassandra memory --help</code></summary>
+
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>Usage: cassandra memory [OPTIONS] COMMAND [ARGS]...
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>  Manage memories stored in Cassandra.
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>Commands:
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>  delete  Delete one or more memories by ID.
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>  edit    Edit a memory&#39;s content or importance.
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>  export  Export all memories to JSON.
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>  import  Import memories from a JSON file.
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>  list    List stored memories with optional filters.
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>  prune   Prune memories matching specified criteria.
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>  purge   Delete ALL memories from the database.
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>  show    Show full details of a single memory.
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>  stats   Show memory store statistics.
+</code></pre></div>
+
+</details>
+
+<details>
+<summary><code>cassandra mcp --help</code></summary>
+
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Usage: cassandra mcp [OPTIONS] COMMAND [ARGS]...
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>  MCP server for Claude Code integration.
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>Commands:
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>  install    Install Cassandra MCP server into Claude Code config.
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>  serve      Start the MCP server (called by Claude Code).
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>  status     Check Cassandra MCP configuration status.
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>  uninstall  Remove Cassandra MCP server from Claude Code config.
+</code></pre></div>
+
+</details>
+
+<details>
+<summary><code>cassandra install --help</code></summary>
+
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>Usage: cassandra install [OPTIONS] COMMAND [ARGS]...
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>  Install and manage persistent Cassandra deployments.
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>Options:
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>  -?, --help  Show this message and exit.
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>Commands:
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>  apply    Install a persistent Cassandra deployment.
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>  remove   Remove a persistent deployment and undo managed config.
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>  restart  Restart a persistent deployment.
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>  start    Start a persistent deployment.
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>  status   Show persistent deployment status.
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>  stop     Stop a persistent deployment.
+</code></pre></div>
+
+</details>
+
+<details>
+<summary><code>cassandra wrap --help</code></summary>
+
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>Usage: cassandra wrap [OPTIONS] COMMAND [ARGS]...
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>  Wrap CLI tools to run through Cassandra.
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>Commands:
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>  aider     Launch aider through Cassandra proxy.
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>  claude    Launch Claude Code through Cassandra proxy.
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>  copilot   Launch GitHub Copilot CLI through Cassandra proxy.
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>  codex     Launch OpenAI Codex CLI through Cassandra proxy.
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>  cursor    Start Cassandra proxy for use with Cursor.
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>  openclaw  Install and configure Cassandra OpenClaw plugin in one command.
+</code></pre></div>
+
+</details>
+
+<details>
+<summary><code>cassandra unwrap --help</code></summary>
+
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>Usage: cassandra unwrap [OPTIONS] COMMAND [ARGS]...
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>  Undo durable Cassandra wrapping for supported tools.
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>Commands:
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>  openclaw  Disable the Cassandra OpenClaw plugin and restore the legacy engine slot.
+</code></pre></div>
+
+</details>
+
+<h2 id="cassandra-proxy"><code>cassandra proxy</code><a class="headerlink" href="#cassandra-proxy" title="Permanent link">&para;</a></h2>
+<p>Start the optimization proxy server.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>cassandra<span class="w"> </span>proxy
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>cassandra<span class="w"> </span>proxy<span class="w"> </span>--port<span class="w"> </span><span class="m">8787</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>cassandra<span class="w"> </span>proxy<span class="w"> </span>--mode<span class="w"> </span>cache
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--host</code></td>
+<td><code>127.0.0.1</code></td>
+<td>Host interface to bind</td>
+</tr>
+<tr>
+<td><code>--port</code>, <code>-p</code></td>
+<td><code>8787</code></td>
+<td>Port to bind</td>
+</tr>
+<tr>
+<td><code>--mode</code></td>
+<td>runtime default</td>
+<td>Optimization mode: <code>token</code>, <code>cache</code>, <code>token_mode</code>, <code>cache_mode</code>, <code>token_savings</code>, <code>cost_savings</code>, <code>token_cassandra</code></td>
+</tr>
+<tr>
+<td><code>--no-optimize</code></td>
+<td>off</td>
+<td>Disable optimization and operate in passthrough mode</td>
+</tr>
+<tr>
+<td><code>--no-cache</code></td>
+<td>off</td>
+<td>Disable semantic caching</td>
+</tr>
+<tr>
+<td><code>--no-rate-limit</code></td>
+<td>off</td>
+<td>Disable rate limiting</td>
+</tr>
+<tr>
+<td><code>--retry-max-attempts</code></td>
+<td>runtime default <code>3</code></td>
+<td>Maximum upstream retry attempts</td>
+</tr>
+<tr>
+<td><code>--request-timeout-seconds</code></td>
+<td>runtime default <code>300</code></td>
+<td>Request timeout in seconds</td>
+</tr>
+<tr>
+<td><code>--connect-timeout-seconds</code></td>
+<td>runtime default <code>10</code></td>
+<td>Upstream connection timeout</td>
+</tr>
+<tr>
+<td><code>--anthropic-pre-upstream-concurrency</code></td>
+<td>auto <code>max(2, min(8, cpu_count))</code></td>
+<td>Cap simultaneous pre-upstream work on <code>/v1/messages</code> (body read, deep copy, first compression stage, memory-context lookup, upstream connect). <code>0</code> or negative disables (unbounded); any positive integer is honoured verbatim. Prevents cold-start replay storms from starving <code>/livez</code>, <code>/readyz</code>, and new Codex WS opens.</td>
+</tr>
+<tr>
+<td><code>--anthropic-pre-upstream-acquire-timeout-seconds</code></td>
+<td><code>15.0</code></td>
+<td>Fail fast when the Anthropic pre-upstream queue is saturated. Requests that wait longer return <code>503</code> with <code>Retry-After</code> instead of parking indefinitely.</td>
+</tr>
+<tr>
+<td><code>--anthropic-pre-upstream-memory-context-timeout-seconds</code></td>
+<td><code>2.0</code></td>
+<td>Fail-open timeout for Anthropic memory-context lookup while the request still holds a pre-upstream slot.</td>
+</tr>
+<tr>
+<td><code>--log-file</code></td>
+<td>unset</td>
+<td>JSONL log output path</td>
+</tr>
+<tr>
+<td><code>--budget</code></td>
+<td>unset</td>
+<td>Daily USD budget limit</td>
+</tr>
+<tr>
+<td><code>--no-code-aware</code></td>
+<td>off</td>
+<td>Disable AST-aware code compression</td>
+</tr>
+<tr>
+<td><code>--code-aware</code></td>
+<td>off</td>
+<td>Enable code-aware compression in the proxy (env: CASSANDRA_CODE_AWARE_ENABLED)</td>
+</tr>
+<tr>
+<td><code>--no-read-lifecycle</code></td>
+<td>off</td>
+<td>Disable stale/superseded read compression</td>
+</tr>
+<tr>
+<td><code>--no-ccr-inject-tool</code></td>
+<td>off</td>
+<td>Disable injecting the <code>cassandra_retrieve</code> tool</td>
+</tr>
+<tr>
+<td><code>--no-ccr-marker</code></td>
+<td>off</td>
+<td>Disable adding retrieval markers to compressed output</td>
+</tr>
+<tr>
+<td><code>--no-ccr-proactive-expansion</code></td>
+<td>off</td>
+<td>Disable proactive CCR context expansion</td>
+</tr>
+<tr>
+<td><code>--memory</code></td>
+<td>off</td>
+<td>Enable persistent user memory</td>
+</tr>
+<tr>
+<td><code>--memory-db-path</code></td>
+<td><code>""</code></td>
+<td>Override memory DB path (help text: <code>{cwd}/.cassandra/memory.db</code>)</td>
+</tr>
+<tr>
+<td><code>--no-memory-tools</code></td>
+<td>off</td>
+<td>Disable automatic memory tool injection</td>
+</tr>
+<tr>
+<td><code>--no-memory-context</code></td>
+<td>off</td>
+<td>Disable automatic memory context injection</td>
+</tr>
+<tr>
+<td><code>--memory-top-k</code></td>
+<td><code>10</code></td>
+<td>Number of memories to inject</td>
+</tr>
+<tr>
+<td><code>--learn</code></td>
+<td>off</td>
+<td>Enable live traffic learning</td>
+</tr>
+<tr>
+<td><code>--no-learn</code></td>
+<td>off</td>
+<td>Explicitly disable traffic learning</td>
+</tr>
+<tr>
+<td><code>--backend</code></td>
+<td><code>anthropic</code></td>
+<td>Backend: <code>anthropic</code>, <code>bedrock</code>, <code>openrouter</code>, <code>anyllm</code>, or <code>litellm-*</code></td>
+</tr>
+<tr>
+<td><code>--anyllm-provider</code></td>
+<td><code>openai</code></td>
+<td>Provider name for <code>anyllm</code></td>
+</tr>
+<tr>
+<td><code>--anthropic-api-url</code></td>
+<td>unset</td>
+<td>Custom Anthropic passthrough API URL</td>
+</tr>
+<tr>
+<td><code>--openai-api-url</code></td>
+<td>unset</td>
+<td>Custom OpenAI passthrough API URL</td>
+</tr>
+<tr>
+<td><code>--gemini-api-url</code></td>
+<td>unset</td>
+<td>Custom Gemini passthrough API URL</td>
+</tr>
+<tr>
+<td><code>--region</code></td>
+<td><code>us-west-2</code></td>
+<td>Cloud region for Bedrock / Vertex / related backends</td>
+</tr>
+<tr>
+<td><code>--bedrock-region</code></td>
+<td>unset</td>
+<td>Deprecated Bedrock region override</td>
+</tr>
+<tr>
+<td><code>--bedrock-profile</code></td>
+<td>unset</td>
+<td>AWS profile name for Bedrock</td>
+</tr>
+<tr>
+<td><code>--telemetry</code></td>
+<td>off</td>
+<td>Opt in to anonymous usage telemetry (off by default)</td>
+</tr>
+<tr>
+<td><code>--no-telemetry</code></td>
+<td>off</td>
+<td>Force anonymous usage telemetry off (already the default)</td>
+</tr>
+</tbody>
+</table>
+<p>Notes:</p>
+<ul>
+<li><code>--learn</code> implies memory unless <code>--no-learn</code> is also set.</li>
+<li>Proxy startup can also read environment variables such as <code>CASSANDRA_HOST</code>, <code>CASSANDRA_PORT</code>, <code>CASSANDRA_BUDGET</code>, <code>CASSANDRA_MODE</code>, <code>CASSANDRA_ANYLLM_PROVIDER</code>, <code>CASSANDRA_ANTHROPIC_PRE_UPSTREAM_CONCURRENCY</code>, <code>CASSANDRA_ANTHROPIC_PRE_UPSTREAM_ACQUIRE_TIMEOUT_SECONDS</code>, <code>CASSANDRA_REQUEST_TIMEOUT</code>, <code>CASSANDRA_ANTHROPIC_PRE_UPSTREAM_MEMORY_CONTEXT_TIMEOUT_SECONDS</code>, <code>ANTHROPIC_TARGET_API_URL</code>, <code>OPENAI_TARGET_API_URL</code>, and <code>GEMINI_TARGET_API_URL</code>. CLI flags take precedence over environment variables.</li>
+<li>The default Anthropic pre-upstream cap is intentionally conservative for CPU/ONNX-heavy work. Larger containers may want to raise it after checking the resolved runtime values on <code>/readyz</code> or <code>/debug/warmup</code>.</li>
+</ul>
+<p>See also: <a href="../proxy/">Proxy Server</a>, <a href="../configuration/">Configuration</a></p>
+<h2 id="cassandra-learn"><code>cassandra learn</code><a class="headerlink" href="#cassandra-learn" title="Permanent link">&para;</a></h2>
+<p>Learn from past tool-call failures and produce agent guidance.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>cassandra<span class="w"> </span>learn
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>cassandra<span class="w"> </span>learn<span class="w"> </span>--apply
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>cassandra<span class="w"> </span>learn<span class="w"> </span>--agent<span class="w"> </span>codex<span class="w"> </span>--all
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--project</code></td>
+<td>current project resolution</td>
+<td>Target project path</td>
+</tr>
+<tr>
+<td><code>--all</code></td>
+<td>off</td>
+<td>Analyze all discovered projects</td>
+</tr>
+<tr>
+<td><code>--apply</code></td>
+<td>off</td>
+<td>Write recommendations instead of dry-run output</td>
+</tr>
+<tr>
+<td><code>--agent</code></td>
+<td><code>auto</code></td>
+<td>Agent source: <code>auto</code>, built-ins (<code>claude</code>, <code>codex</code>, <code>gemini</code>), or plugin-provided names</td>
+</tr>
+<tr>
+<td><code>--model</code></td>
+<td>auto-detect</td>
+<td>LLM model used for analysis</td>
+</tr>
+</tbody>
+</table>
+<p>Notes:</p>
+<ul>
+<li><code>--agent auto</code> scans all detected agent data sources.</li>
+<li>If <code>--project</code> is omitted, Cassandra resolves from the current directory upward.</li>
+<li>External agent integrations register through the <code>cassandra.learn_plugin</code> entry point.</li>
+</ul>
+<p>See also: <a href="../learn/">Failure Learning</a></p>
+<h2 id="cassandra-perf"><code>cassandra perf</code><a class="headerlink" href="#cassandra-perf" title="Permanent link">&para;</a></h2>
+<p>Summarize recent proxy performance from the local proxy log.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>cassandra<span class="w"> </span>perf
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>cassandra<span class="w"> </span>perf<span class="w"> </span>--hours<span class="w"> </span><span class="m">24</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>cassandra<span class="w"> </span>perf<span class="w"> </span>--raw
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--hours</code></td>
+<td><code>168.0</code></td>
+<td>Time window in hours</td>
+</tr>
+<tr>
+<td><code>--raw</code></td>
+<td>off</td>
+<td>Print raw PERF records instead of the summarized report</td>
+</tr>
+</tbody>
+</table>
+<p>The command reads <code>${CASSANDRA_WORKSPACE_DIR}/logs/proxy.log</code> (defaults
+to <code>~/.cassandra/logs/proxy.log</code> — see the
+<a href="../filesystem-contract/">Filesystem Contract</a>).</p>
+<h2 id="cassandra-evals"><code>cassandra evals</code><a class="headerlink" href="#cassandra-evals" title="Permanent link">&para;</a></h2>
+<p>Memory evaluation command group.</p>
+<h3 id="cassandra-evals-memory"><code>cassandra evals memory</code><a class="headerlink" href="#cassandra-evals-memory" title="Permanent link">&para;</a></h3>
+<p>Run the LoCoMo memory evaluation benchmark.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>cassandra<span class="w"> </span>evals<span class="w"> </span>memory<span class="w"> </span>-n<span class="w"> </span><span class="m">3</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>cassandra<span class="w"> </span>evals<span class="w"> </span>memory<span class="w"> </span>--answer-model<span class="w"> </span>gpt-4o<span class="w"> </span>--llm-judge
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--n-conversations</code>, <code>-n</code></td>
+<td>all available</td>
+<td>Number of conversations to evaluate</td>
+</tr>
+<tr>
+<td><code>--categories</code></td>
+<td>benchmark default</td>
+<td>Comma-separated categories</td>
+</tr>
+<tr>
+<td><code>--include-adversarial</code></td>
+<td>off</td>
+<td>Include category 5 / unanswerable questions</td>
+</tr>
+<tr>
+<td><code>--top-k</code></td>
+<td><code>10</code></td>
+<td>Memories retrieved per question</td>
+</tr>
+<tr>
+<td><code>--f1-threshold</code></td>
+<td><code>0.5</code></td>
+<td>Threshold for correctness</td>
+</tr>
+<tr>
+<td><code>--answer-model</code></td>
+<td>unset</td>
+<td>Model for answer generation</td>
+</tr>
+<tr>
+<td><code>--llm-judge</code></td>
+<td>off</td>
+<td>Use LLM-as-judge scoring</td>
+</tr>
+<tr>
+<td><code>--judge-provider</code></td>
+<td><code>litellm</code></td>
+<td>Judge provider: <code>openai</code>, <code>anthropic</code>, <code>litellm</code>, <code>simple</code></td>
+</tr>
+<tr>
+<td><code>--judge-model</code></td>
+<td><code>gpt-4o</code></td>
+<td>Judge model</td>
+</tr>
+<tr>
+<td><code>--output</code>, <code>-o</code></td>
+<td>unset</td>
+<td>Save JSON results to a path</td>
+</tr>
+<tr>
+<td><code>--no-extract</code></td>
+<td>off</td>
+<td>Disable LLM memory extraction</td>
+</tr>
+<tr>
+<td><code>--extraction-model</code></td>
+<td><code>gpt-4o-mini</code></td>
+<td>Memory extraction model</td>
+</tr>
+<tr>
+<td><code>--pass-all</code></td>
+<td>off</td>
+<td>Require all checks to pass</td>
+</tr>
+<tr>
+<td><code>--parallel</code></td>
+<td><code>10</code></td>
+<td>Parallel worker count</td>
+</tr>
+<tr>
+<td><code>--debug</code></td>
+<td>off</td>
+<td>Enable debug output</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cassandra-evals-memory-v2"><code>cassandra evals memory-v2</code><a class="headerlink" href="#cassandra-evals-memory-v2" title="Permanent link">&para;</a></h3>
+<p>Run the V2 memory evaluation flow with LLM-controlled tools.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>cassandra<span class="w"> </span>evals<span class="w"> </span>memory-v2
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>cassandra<span class="w"> </span>evals<span class="w"> </span>memory-v2<span class="w"> </span>--save-model<span class="w"> </span>gpt-4o-mini<span class="w"> </span>--llm-judge
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--n-conversations</code>, <code>-n</code></td>
+<td>all available</td>
+<td>Number of conversations to evaluate</td>
+</tr>
+<tr>
+<td><code>--categories</code></td>
+<td>benchmark default</td>
+<td>Comma-separated categories</td>
+</tr>
+<tr>
+<td><code>--include-adversarial</code></td>
+<td>off</td>
+<td>Include adversarial questions</td>
+</tr>
+<tr>
+<td><code>--f1-threshold</code></td>
+<td><code>0.5</code></td>
+<td>Threshold for correctness</td>
+</tr>
+<tr>
+<td><code>--save-model</code></td>
+<td><code>gpt-4o-mini</code></td>
+<td>Model used when persisting memories</td>
+</tr>
+<tr>
+<td><code>--answer-model</code></td>
+<td><code>gpt-4o</code></td>
+<td>Answer model</td>
+</tr>
+<tr>
+<td><code>--max-results</code></td>
+<td><code>10</code></td>
+<td>Maximum tool results</td>
+</tr>
+<tr>
+<td><code>--no-graph</code></td>
+<td>off</td>
+<td>Disable graph usage</td>
+</tr>
+<tr>
+<td><code>--llm-judge</code></td>
+<td>off</td>
+<td>Use LLM-as-judge scoring</td>
+</tr>
+<tr>
+<td><code>--judge-model</code></td>
+<td><code>gpt-4o</code></td>
+<td>Judge model</td>
+</tr>
+<tr>
+<td><code>--output</code>, <code>-o</code></td>
+<td>unset</td>
+<td>Save JSON results</td>
+</tr>
+<tr>
+<td><code>--parallel</code></td>
+<td><code>5</code></td>
+<td>Parallel worker count</td>
+</tr>
+<tr>
+<td><code>--debug</code></td>
+<td>off</td>
+<td>Enable debug output</td>
+</tr>
+</tbody>
+</table>
+<p>Hidden compatibility shims exist for older command paths:</p>
+<ul>
+<li><code>cassandra memory-eval</code></li>
+<li><code>cassandra memory-eval-v2</code></li>
+</ul>
+<p>These are intentionally omitted from normal usage docs.</p>
+<h2 id="cassandra-memory"><code>cassandra memory</code><a class="headerlink" href="#cassandra-memory" title="Permanent link">&para;</a></h2>
+<p>Memory management command group. This group is only registered when the optional memory dependencies import successfully.</p>
+<h3 id="cassandra-memory-list"><code>cassandra memory list</code><a class="headerlink" href="#cassandra-memory-list" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>cassandra<span class="w"> </span>memory<span class="w"> </span>list
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>cassandra<span class="w"> </span>memory<span class="w"> </span>list<span class="w"> </span>--scope<span class="w"> </span>USER<span class="w"> </span>--since<span class="w"> </span>7d
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>cassandra<span class="w"> </span>memory<span class="w"> </span>list<span class="w"> </span>-q<span class="w"> </span><span class="s2">&quot;budget&quot;</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--db-path</code></td>
+<td><code>./.cassandra/memory.db</code> if present, else <code>~/.cassandra/memory.db</code></td>
+<td>Memory database path</td>
+</tr>
+<tr>
+<td><code>--limit</code>, <code>-n</code></td>
+<td><code>50</code></td>
+<td>Maximum memories to show</td>
+</tr>
+<tr>
+<td><code>--session</code>, <code>-s</code></td>
+<td>unset</td>
+<td>Filter by session ID</td>
+</tr>
+<tr>
+<td><code>--scope</code></td>
+<td>unset</td>
+<td><code>USER</code>, <code>SESSION</code>, <code>AGENT</code>, or <code>TURN</code></td>
+</tr>
+<tr>
+<td><code>--since</code></td>
+<td>unset</td>
+<td>Age filter using duration syntax such as <code>7d</code>, <code>2w</code>, <code>1m</code></td>
+</tr>
+<tr>
+<td><code>--search</code>, <code>-q</code></td>
+<td>unset</td>
+<td>Content search query</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cassandra-memory-show-memory_id"><code>cassandra memory show &lt;memory_id&gt;</code><a class="headerlink" href="#cassandra-memory-show-memory_id" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>cassandra<span class="w"> </span>memory<span class="w"> </span>show<span class="w"> </span>1234abcd
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>cassandra<span class="w"> </span>memory<span class="w"> </span>show<span class="w"> </span>1234abcd<span class="w"> </span>--json
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Argument / option</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>memory_id</code></td>
+<td>required</td>
+<td>Full or partial memory ID</td>
+</tr>
+<tr>
+<td><code>--db-path</code></td>
+<td><code>./.cassandra/memory.db</code> if present, else <code>~/.cassandra/memory.db</code></td>
+<td>Memory database path</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td>off</td>
+<td>Emit raw JSON</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cassandra-memory-stats"><code>cassandra memory stats</code><a class="headerlink" href="#cassandra-memory-stats" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>cassandra<span class="w"> </span>memory<span class="w"> </span>stats
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--db-path</code></td>
+<td><code>./.cassandra/memory.db</code> if present, else <code>~/.cassandra/memory.db</code></td>
+<td>Memory database path</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cassandra-memory-edit-memory_id"><code>cassandra memory edit &lt;memory_id&gt;</code><a class="headerlink" href="#cassandra-memory-edit-memory_id" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>cassandra<span class="w"> </span>memory<span class="w"> </span>edit<span class="w"> </span>1234abcd<span class="w"> </span>--content<span class="w"> </span><span class="s2">&quot;Updated note&quot;</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>cassandra<span class="w"> </span>memory<span class="w"> </span>edit<span class="w"> </span>1234abcd<span class="w"> </span>--importance<span class="w"> </span><span class="m">0</span>.9
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Argument / option</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>memory_id</code></td>
+<td>required</td>
+<td>Full or partial memory ID</td>
+</tr>
+<tr>
+<td><code>--db-path</code></td>
+<td><code>./.cassandra/memory.db</code> if present, else <code>~/.cassandra/memory.db</code></td>
+<td>Memory database path</td>
+</tr>
+<tr>
+<td><code>--content</code>, <code>-c</code></td>
+<td>unset</td>
+<td>New memory content</td>
+</tr>
+<tr>
+<td><code>--importance</code>, <code>-i</code></td>
+<td>unset</td>
+<td>New importance score (<code>0.0</code> to <code>1.0</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>At least one of <code>--content</code> or <code>--importance</code> is required.</p>
+<h3 id="cassandra-memory-delete-memory_ids"><code>cassandra memory delete &lt;memory_ids...&gt;</code><a class="headerlink" href="#cassandra-memory-delete-memory_ids" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>cassandra<span class="w"> </span>memory<span class="w"> </span>delete<span class="w"> </span>1234abcd<span class="w"> </span>5678efgh
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>cassandra<span class="w"> </span>memory<span class="w"> </span>delete<span class="w"> </span>1234abcd<span class="w"> </span>--force
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Argument / option</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>memory_ids...</code></td>
+<td>required</td>
+<td>One or more memory IDs</td>
+</tr>
+<tr>
+<td><code>--db-path</code></td>
+<td><code>./.cassandra/memory.db</code> if present, else <code>~/.cassandra/memory.db</code></td>
+<td>Memory database path</td>
+</tr>
+<tr>
+<td><code>--force</code>, <code>-f</code></td>
+<td>off</td>
+<td>Skip confirmation</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cassandra-memory-prune"><code>cassandra memory prune</code><a class="headerlink" href="#cassandra-memory-prune" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>cassandra<span class="w"> </span>memory<span class="w"> </span>prune<span class="w"> </span>--older-than<span class="w"> </span>30d<span class="w"> </span>--dry-run
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>cassandra<span class="w"> </span>memory<span class="w"> </span>prune<span class="w"> </span>--scope<span class="w"> </span>SESSION<span class="w"> </span>--force
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--db-path</code></td>
+<td><code>./.cassandra/memory.db</code> if present, else <code>~/.cassandra/memory.db</code></td>
+<td>Memory database path</td>
+</tr>
+<tr>
+<td><code>--older-than</code></td>
+<td>unset</td>
+<td>Age threshold</td>
+</tr>
+<tr>
+<td><code>--scope</code></td>
+<td>unset</td>
+<td>Scope filter: <code>USER</code>, <code>SESSION</code>, <code>AGENT</code>, <code>TURN</code></td>
+</tr>
+<tr>
+<td><code>--low-importance</code></td>
+<td>unset</td>
+<td>Importance cutoff</td>
+</tr>
+<tr>
+<td><code>--session</code>, <code>-s</code></td>
+<td>unset</td>
+<td>Session ID filter</td>
+</tr>
+<tr>
+<td><code>--dry-run</code></td>
+<td>off</td>
+<td>Show what would be removed</td>
+</tr>
+<tr>
+<td><code>--force</code>, <code>-f</code></td>
+<td>off</td>
+<td>Skip confirmation</td>
+</tr>
+</tbody>
+</table>
+<p>At least one filter is required. Filters combine with <strong>AND</strong> semantics.</p>
+<h3 id="cassandra-memory-purge"><code>cassandra memory purge</code><a class="headerlink" href="#cassandra-memory-purge" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>cassandra<span class="w"> </span>memory<span class="w"> </span>purge<span class="w"> </span>--confirm
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--db-path</code></td>
+<td><code>./.cassandra/memory.db</code> if present, else <code>~/.cassandra/memory.db</code></td>
+<td>Memory database path</td>
+</tr>
+<tr>
+<td><code>--confirm</code></td>
+<td>off</td>
+<td>Required confirmation flag</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cassandra-memory-export"><code>cassandra memory export</code><a class="headerlink" href="#cassandra-memory-export" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>cassandra<span class="w"> </span>memory<span class="w"> </span><span class="nb">export</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>cassandra<span class="w"> </span>memory<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--output<span class="w"> </span>export.json
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--db-path</code></td>
+<td><code>./.cassandra/memory.db</code> if present, else <code>~/.cassandra/memory.db</code></td>
+<td>Memory database path</td>
+</tr>
+<tr>
+<td><code>--output</code>, <code>-o</code></td>
+<td>stdout</td>
+<td>Output path</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cassandra-memory-import-file"><code>cassandra memory import &lt;file&gt;</code><a class="headerlink" href="#cassandra-memory-import-file" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>cassandra<span class="w"> </span>memory<span class="w"> </span>import<span class="w"> </span>export.json
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>cassandra<span class="w"> </span>memory<span class="w"> </span>import<span class="w"> </span>export.json<span class="w"> </span>--force
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Argument / option</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>file</code></td>
+<td>required</td>
+<td>JSON file containing exported memories</td>
+</tr>
+<tr>
+<td><code>--db-path</code></td>
+<td><code>./.cassandra/memory.db</code> if present, else <code>~/.cassandra/memory.db</code></td>
+<td>Memory database path</td>
+</tr>
+<tr>
+<td><code>--force</code>, <code>-f</code></td>
+<td>off</td>
+<td>Skip confirmation</td>
+</tr>
+</tbody>
+</table>
+<p>The import expects a JSON array. Malformed entries are skipped.</p>
+<h2 id="cassandra-mcp"><code>cassandra mcp</code><a class="headerlink" href="#cassandra-mcp" title="Permanent link">&para;</a></h2>
+<p>Manage the Cassandra MCP server integration.</p>
+<h3 id="cassandra-mcp-install"><code>cassandra mcp install</code><a class="headerlink" href="#cassandra-mcp-install" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>cassandra<span class="w"> </span>mcp<span class="w"> </span>install
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>cassandra<span class="w"> </span>mcp<span class="w"> </span>install<span class="w"> </span>--proxy-url<span class="w"> </span>http://127.0.0.1:9000
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--proxy-url</code></td>
+<td><code>http://127.0.0.1:8787</code></td>
+<td>Proxy URL written into MCP config</td>
+</tr>
+<tr>
+<td><code>--force</code></td>
+<td>off</td>
+<td>Overwrite an existing Cassandra MCP config</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cassandra-mcp-uninstall"><code>cassandra mcp uninstall</code><a class="headerlink" href="#cassandra-mcp-uninstall" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>cassandra<span class="w"> </span>mcp<span class="w"> </span>uninstall
+</code></pre></div>
+<p>This removes the Cassandra MCP server entry from the Claude configuration.</p>
+<h3 id="cassandra-mcp-status"><code>cassandra mcp status</code><a class="headerlink" href="#cassandra-mcp-status" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>cassandra<span class="w"> </span>mcp<span class="w"> </span>status
+</code></pre></div>
+<p>This inspects MCP SDK availability, Claude config state, and proxy reachability.</p>
+<h3 id="cassandra-mcp-serve"><code>cassandra mcp serve</code><a class="headerlink" href="#cassandra-mcp-serve" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>cassandra<span class="w"> </span>mcp<span class="w"> </span>serve
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>cassandra<span class="w"> </span>mcp<span class="w"> </span>serve<span class="w"> </span>--proxy-url<span class="w"> </span>http://127.0.0.1:9000<span class="w"> </span>--debug
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--proxy-url</code></td>
+<td><code>http://127.0.0.1:8787</code></td>
+<td>Proxy URL (also reads <code>CASSANDRA_PROXY_URL</code>)</td>
+</tr>
+<tr>
+<td><code>--direct</code></td>
+<td>off</td>
+<td>Disable stdio transport wrapping</td>
+</tr>
+<tr>
+<td><code>--debug</code></td>
+<td>off</td>
+<td>Enable debug logging</td>
+</tr>
+</tbody>
+</table>
+<p><code>serve</code> is part of the public CLI, but it is usually consumed by MCP host tooling rather than by humans directly.</p>
+<p>See also: <a href="../mcp/">MCP Tools</a></p>
+<h2 id="cassandra-install"><code>cassandra install</code><a class="headerlink" href="#cassandra-install" title="Permanent link">&para;</a></h2>
+<p>Install and manage persistent local Cassandra deployments.</p>
+<h3 id="cassandra-install-apply-help"><code>cassandra install apply --help</code><a class="headerlink" href="#cassandra-install-apply-help" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>Usage: cassandra install apply [OPTIONS]
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>  Install a persistent Cassandra deployment.
+<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a>
+<a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>Options:
+<a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>  --preset [persistent-service|persistent-task|persistent-docker]
+<a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a>                                  Persistent runtime preset to install.
+<a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a>                                  [default: persistent-service]
+<a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a>  --runtime [python|docker]       Runtime used to execute Cassandra for
+<a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a>                                  service/task modes.  [default: python]
+<a id="__codelineno-28-11" name="__codelineno-28-11" href="#__codelineno-28-11"></a>  --scope [provider|user|system]  Where to apply persistent configuration.
+<a id="__codelineno-28-12" name="__codelineno-28-12" href="#__codelineno-28-12"></a>                                  [default: user]
+<a id="__codelineno-28-13" name="__codelineno-28-13" href="#__codelineno-28-13"></a>  --providers [auto|all|manual]   Target selection mode for direct tool
+<a id="__codelineno-28-14" name="__codelineno-28-14" href="#__codelineno-28-14"></a>                                  configuration.  [default: auto]
+<a id="__codelineno-28-15" name="__codelineno-28-15" href="#__codelineno-28-15"></a>  --target [claude|copilot|codex|aider|cursor|openclaw]
+<a id="__codelineno-28-16" name="__codelineno-28-16" href="#__codelineno-28-16"></a>                                  Tool target to configure when --providers
+<a id="__codelineno-28-17" name="__codelineno-28-17" href="#__codelineno-28-17"></a>                                  manual is used.
+<a id="__codelineno-28-18" name="__codelineno-28-18" href="#__codelineno-28-18"></a>  --profile TEXT                  Deployment profile name.  [default: default]
+<a id="__codelineno-28-19" name="__codelineno-28-19" href="#__codelineno-28-19"></a>  -p, --port INTEGER              Persistent proxy port.  [default: 8787]
+<a id="__codelineno-28-20" name="__codelineno-28-20" href="#__codelineno-28-20"></a>  --backend TEXT                  Proxy backend for the persistent runtime.
+<a id="__codelineno-28-21" name="__codelineno-28-21" href="#__codelineno-28-21"></a>                                  [default: anthropic]
+<a id="__codelineno-28-22" name="__codelineno-28-22" href="#__codelineno-28-22"></a>  --anyllm-provider TEXT          Provider for any-llm backends when --backend
+<a id="__codelineno-28-23" name="__codelineno-28-23" href="#__codelineno-28-23"></a>                                  anyllm is used.
+<a id="__codelineno-28-24" name="__codelineno-28-24" href="#__codelineno-28-24"></a>  --region TEXT                   Cloud region for Bedrock / Vertex style
+<a id="__codelineno-28-25" name="__codelineno-28-25" href="#__codelineno-28-25"></a>                                  backends.
+<a id="__codelineno-28-26" name="__codelineno-28-26" href="#__codelineno-28-26"></a>  --mode TEXT                     Proxy optimization mode.  [default: token]
+<a id="__codelineno-28-27" name="__codelineno-28-27" href="#__codelineno-28-27"></a>  --memory                        Enable persistent memory in the proxy runtime.
+<a id="__codelineno-28-28" name="__codelineno-28-28" href="#__codelineno-28-28"></a>  --telemetry                     Opt in to anonymous telemetry in the runtime
+<a id="__codelineno-28-29" name="__codelineno-28-29" href="#__codelineno-28-29"></a>                                  (off by default).
+<a id="__codelineno-28-30" name="__codelineno-28-30" href="#__codelineno-28-30"></a>  --no-telemetry                  Force anonymous telemetry off in the runtime
+<a id="__codelineno-28-31" name="__codelineno-28-31" href="#__codelineno-28-31"></a>                                  (already the default).
+<a id="__codelineno-28-32" name="__codelineno-28-32" href="#__codelineno-28-32"></a>  --image TEXT                    Docker image to use when runtime=docker or
+<a id="__codelineno-28-33" name="__codelineno-28-33" href="#__codelineno-28-33"></a>                                  preset=persistent-docker.  [default:
+<a id="__codelineno-28-34" name="__codelineno-28-34" href="#__codelineno-28-34"></a>                                  ghcr.io/Sarthak-47/cassandra:latest]
+<a id="__codelineno-28-35" name="__codelineno-28-35" href="#__codelineno-28-35"></a>  -?, --help                      Show this message and exit.
+</code></pre></div>
+<h3 id="cassandra-install-apply"><code>cassandra install apply</code><a class="headerlink" href="#cassandra-install-apply" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>cassandra<span class="w"> </span>install<span class="w"> </span>apply<span class="w"> </span>--preset<span class="w"> </span>persistent-service<span class="w"> </span>--providers<span class="w"> </span>auto
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>cassandra<span class="w"> </span>install<span class="w"> </span>apply<span class="w"> </span>--preset<span class="w"> </span>persistent-task<span class="w"> </span>--providers<span class="w"> </span>manual<span class="w"> </span>--target<span class="w"> </span>claude<span class="w"> </span>--target<span class="w"> </span>codex
+<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>cassandra<span class="w"> </span>install<span class="w"> </span>apply<span class="w"> </span>--preset<span class="w"> </span>persistent-docker<span class="w"> </span>--scope<span class="w"> </span>user
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--preset</code></td>
+<td><code>persistent-service</code></td>
+<td>Lifecycle preset: <code>persistent-service</code>, <code>persistent-task</code>, or <code>persistent-docker</code></td>
+</tr>
+<tr>
+<td><code>--runtime</code></td>
+<td><code>python</code></td>
+<td>Runtime used for service/task installs: <code>python</code> or <code>docker</code></td>
+</tr>
+<tr>
+<td><code>--scope</code></td>
+<td><code>user</code></td>
+<td>Config scope: <code>provider</code>, <code>user</code>, or <code>system</code></td>
+</tr>
+<tr>
+<td><code>--providers</code></td>
+<td><code>auto</code></td>
+<td>Target selection mode: <code>auto</code>, <code>all</code>, or <code>manual</code></td>
+</tr>
+<tr>
+<td><code>--target</code></td>
+<td>repeatable</td>
+<td>Tool target used with <code>--providers manual</code></td>
+</tr>
+<tr>
+<td><code>--profile</code></td>
+<td><code>default</code></td>
+<td>Deployment profile name</td>
+</tr>
+<tr>
+<td><code>--port</code>, <code>-p</code></td>
+<td><code>8787</code></td>
+<td>Persistent proxy port</td>
+</tr>
+<tr>
+<td><code>--backend</code></td>
+<td><code>anthropic</code></td>
+<td>Backend for the managed runtime</td>
+</tr>
+<tr>
+<td><code>--anyllm-provider</code></td>
+<td>unset</td>
+<td>Provider name used with <code>--backend anyllm</code></td>
+</tr>
+<tr>
+<td><code>--region</code></td>
+<td>unset</td>
+<td>Cloud region override</td>
+</tr>
+<tr>
+<td><code>--mode</code></td>
+<td><code>token</code></td>
+<td>Proxy optimization mode</td>
+</tr>
+<tr>
+<td><code>--memory</code></td>
+<td>off</td>
+<td>Enable persistent memory in the managed runtime</td>
+</tr>
+<tr>
+<td><code>--telemetry</code></td>
+<td>off</td>
+<td>Opt in to anonymous telemetry (off by default)</td>
+</tr>
+<tr>
+<td><code>--no-telemetry</code></td>
+<td>off</td>
+<td>Force anonymous telemetry off (already the default)</td>
+</tr>
+<tr>
+<td><code>--image</code></td>
+<td><code>ghcr.io/Sarthak-47/cassandra:latest</code></td>
+<td>Docker image for Docker-backed installs</td>
+</tr>
+</tbody>
+</table>
+<p><code>apply</code> stores a manifest under
+<code>${CASSANDRA_WORKSPACE_DIR}/deploy/&lt;profile&gt;/manifest.json</code> (default
+<code>~/.cassandra/deploy/&lt;profile&gt;/manifest.json</code>), applies managed tool
+configuration, starts the chosen runtime, and waits for <code>readyz</code>.</p>
+<p>Docker-native host wrappers expose a narrower <code>cassandra install</code> subset for <code>persistent-docker</code> only: <code>apply</code>, <code>status</code>, <code>start</code>, <code>stop</code>, <code>restart</code>, and <code>remove</code>. Those wrapper flows preserve the same port and manifest behavior, but they intentionally reject <code>persistent-service</code>, <code>persistent-task</code>, and provider mutation flags like <code>--scope</code>, <code>--providers</code>, and <code>--target</code>.</p>
+<h3 id="cassandra-install-status"><code>cassandra install status</code><a class="headerlink" href="#cassandra-install-status" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>cassandra<span class="w"> </span>install<span class="w"> </span>status
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>cassandra<span class="w"> </span>install<span class="w"> </span>status<span class="w"> </span>--profile<span class="w"> </span>default
+</code></pre></div>
+<p>Shows the stored profile, preset, runtime, supervisor kind, scope, port, runtime status, readiness, and backend from <code>/health</code>.</p>
+<h3 id="cassandra-install-start"><code>cassandra install start</code><a class="headerlink" href="#cassandra-install-start" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>cassandra<span class="w"> </span>install<span class="w"> </span>start
+<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>cassandra<span class="w"> </span>install<span class="w"> </span>start<span class="w"> </span>--profile<span class="w"> </span>default
+</code></pre></div>
+<p>Starts a previously installed deployment profile without reapplying mutations.</p>
+<h3 id="cassandra-install-stop"><code>cassandra install stop</code><a class="headerlink" href="#cassandra-install-stop" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>cassandra<span class="w"> </span>install<span class="w"> </span>stop
+</code></pre></div>
+<p>Stops the managed runtime for an installed deployment profile.</p>
+<h3 id="cassandra-install-restart"><code>cassandra install restart</code><a class="headerlink" href="#cassandra-install-restart" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>cassandra<span class="w"> </span>install<span class="w"> </span>restart
+</code></pre></div>
+<p>Stops and starts the selected deployment profile.</p>
+<h3 id="cassandra-install-remove"><code>cassandra install remove</code><a class="headerlink" href="#cassandra-install-remove" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>cassandra<span class="w"> </span>install<span class="w"> </span>remove
+</code></pre></div>
+<p>Stops the runtime, removes installed supervisor artifacts, reverts managed configuration changes, and deletes the stored manifest.</p>
+<p>See also: <a href="../persistent-installs/">Persistent Installs</a></p>
+<h2 id="cassandra-wrap"><code>cassandra wrap</code><a class="headerlink" href="#cassandra-wrap" title="Permanent link">&para;</a></h2>
+<p>Wrap external coding tools so their traffic flows through Cassandra.</p>
+<h3 id="shared-semantics">Shared semantics<a class="headerlink" href="#shared-semantics" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>--port</code>, when available, defaults to <code>8787</code></li>
+<li><code>--no-proxy</code> skips proxy startup and assumes an existing proxy</li>
+<li><code>--learn</code> enables live traffic learning</li>
+<li><code>-v</code>, <code>--verbose</code> means <strong>verbose output</strong></li>
+<li>Hidden <code>--prepare-only</code> exists for internal Docker-native bridge flows and is intentionally omitted from normal usage</li>
+</ul>
+<h3 id="cassandra-wrap-claude"><code>cassandra wrap claude</code><a class="headerlink" href="#cassandra-wrap-claude" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>cassandra<span class="w"> </span>wrap<span class="w"> </span>claude
+<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>cassandra<span class="w"> </span>wrap<span class="w"> </span>claude<span class="w"> </span>--resume<span class="w"> </span>&lt;session-id&gt;
+<a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>cassandra<span class="w"> </span>wrap<span class="w"> </span>claude<span class="w"> </span>--port<span class="w"> </span><span class="m">9999</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option / arg</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--port</code>, <code>-p</code></td>
+<td><code>8787</code></td>
+<td>Proxy port</td>
+</tr>
+<tr>
+<td><code>--no-rtk</code></td>
+<td>off</td>
+<td>Skip <code>rtk</code> installation and hook registration</td>
+</tr>
+<tr>
+<td><code>--no-proxy</code></td>
+<td>off</td>
+<td>Reuse an existing proxy</td>
+</tr>
+<tr>
+<td><code>--learn</code></td>
+<td>off</td>
+<td>Enable live traffic learning</td>
+</tr>
+<tr>
+<td><code>--verbose</code>, <code>-v</code></td>
+<td>off</td>
+<td>Verbose output</td>
+</tr>
+<tr>
+<td><code>claude_args...</code></td>
+<td>passthrough</td>
+<td>Additional Claude Code arguments</td>
+</tr>
+</tbody>
+</table>
+<p>Requires the <code>claude</code> binary on the host.</p>
+<h3 id="cassandra-wrap-codex"><code>cassandra wrap codex</code><a class="headerlink" href="#cassandra-wrap-codex" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>cassandra<span class="w"> </span>wrap<span class="w"> </span>codex
+<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>cassandra<span class="w"> </span>wrap<span class="w"> </span>codex<span class="w"> </span>--<span class="w"> </span><span class="s2">&quot;fix the bug&quot;</span>
+<a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a>cassandra<span class="w"> </span>wrap<span class="w"> </span>codex<span class="w"> </span>--backend<span class="w"> </span>anyllm<span class="w"> </span>--anyllm-provider<span class="w"> </span>groq
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option / arg</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--port</code>, <code>-p</code></td>
+<td><code>8787</code></td>
+<td>Proxy port</td>
+</tr>
+<tr>
+<td><code>--no-rtk</code></td>
+<td>off</td>
+<td>Skip <code>rtk</code> installation and <code>AGENTS.md</code> injection</td>
+</tr>
+<tr>
+<td><code>--no-proxy</code></td>
+<td>off</td>
+<td>Reuse an existing proxy</td>
+</tr>
+<tr>
+<td><code>--learn</code></td>
+<td>off</td>
+<td>Enable live traffic learning</td>
+</tr>
+<tr>
+<td><code>--backend</code></td>
+<td>unset</td>
+<td>Proxy backend override</td>
+</tr>
+<tr>
+<td><code>--anyllm-provider</code></td>
+<td>unset</td>
+<td><code>anyllm</code> provider override</td>
+</tr>
+<tr>
+<td><code>--region</code></td>
+<td>unset</td>
+<td>Cloud region override</td>
+</tr>
+<tr>
+<td><code>--verbose</code>, <code>-v</code></td>
+<td>off</td>
+<td>Verbose output</td>
+</tr>
+<tr>
+<td><code>codex_args...</code></td>
+<td>passthrough</td>
+<td>Additional Codex CLI arguments</td>
+</tr>
+</tbody>
+</table>
+<p>Requires the <code>codex</code> binary on the host.</p>
+<h3 id="cassandra-wrap-copilot"><code>cassandra wrap copilot</code><a class="headerlink" href="#cassandra-wrap-copilot" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>cassandra<span class="w"> </span>wrap<span class="w"> </span>copilot<span class="w"> </span>--<span class="w"> </span>--model<span class="w"> </span>claude-sonnet-4-20250514
+<a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>cassandra<span class="w"> </span>wrap<span class="w"> </span>copilot<span class="w"> </span>--backend<span class="w"> </span>anyllm<span class="w"> </span>--anyllm-provider<span class="w"> </span>groq<span class="w"> </span>--<span class="w"> </span>--model<span class="w"> </span>gpt-4o
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option / arg</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--port</code>, <code>-p</code></td>
+<td><code>8787</code></td>
+<td>Proxy port</td>
+</tr>
+<tr>
+<td><code>--no-rtk</code></td>
+<td>off</td>
+<td>Skip <code>rtk</code> installation and GitHub Copilot instructions injection</td>
+</tr>
+<tr>
+<td><code>--no-proxy</code></td>
+<td>off</td>
+<td>Reuse an existing proxy</td>
+</tr>
+<tr>
+<td><code>--learn</code></td>
+<td>off</td>
+<td>Enable live traffic learning</td>
+</tr>
+<tr>
+<td><code>--backend</code></td>
+<td>unset</td>
+<td>Proxy backend override</td>
+</tr>
+<tr>
+<td><code>--anyllm-provider</code></td>
+<td>unset</td>
+<td><code>anyllm</code> provider override</td>
+</tr>
+<tr>
+<td><code>--region</code></td>
+<td>unset</td>
+<td>Cloud region override</td>
+</tr>
+<tr>
+<td><code>--provider-type</code></td>
+<td><code>auto</code></td>
+<td>Force Copilot BYOK provider type (<code>anthropic</code> or <code>openai</code>)</td>
+</tr>
+<tr>
+<td><code>--wire-api</code></td>
+<td>unset</td>
+<td>OpenAI wire API override for OpenAI-style backends</td>
+</tr>
+<tr>
+<td><code>--verbose</code>, <code>-v</code></td>
+<td>off</td>
+<td>Verbose output</td>
+</tr>
+<tr>
+<td><code>copilot_args...</code></td>
+<td>passthrough</td>
+<td>Additional Copilot CLI arguments</td>
+</tr>
+</tbody>
+</table>
+<p>Requires the <code>copilot</code> binary on the host. When a matching persistent deployment exists on the requested port, <code>wrap copilot</code> reuses or recovers it before falling back to an ephemeral proxy.</p>
+<h3 id="cassandra-wrap-aider"><code>cassandra wrap aider</code><a class="headerlink" href="#cassandra-wrap-aider" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>cassandra<span class="w"> </span>wrap<span class="w"> </span>aider
+<a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>cassandra<span class="w"> </span>wrap<span class="w"> </span>aider<span class="w"> </span>--<span class="w"> </span>--model<span class="w"> </span>gpt-4o
+<a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>cassandra<span class="w"> </span>wrap<span class="w"> </span>aider<span class="w"> </span>--backend<span class="w"> </span>litellm-vertex<span class="w"> </span>--region<span class="w"> </span>us-central1
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option / arg</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--port</code>, <code>-p</code></td>
+<td><code>8787</code></td>
+<td>Proxy port</td>
+</tr>
+<tr>
+<td><code>--no-rtk</code></td>
+<td>off</td>
+<td>Skip <code>rtk</code> installation and <code>CONVENTIONS.md</code> injection</td>
+</tr>
+<tr>
+<td><code>--no-proxy</code></td>
+<td>off</td>
+<td>Reuse an existing proxy</td>
+</tr>
+<tr>
+<td><code>--learn</code></td>
+<td>off</td>
+<td>Enable live traffic learning</td>
+</tr>
+<tr>
+<td><code>--backend</code></td>
+<td>unset</td>
+<td>Proxy backend override</td>
+</tr>
+<tr>
+<td><code>--anyllm-provider</code></td>
+<td>unset</td>
+<td><code>anyllm</code> provider override</td>
+</tr>
+<tr>
+<td><code>--region</code></td>
+<td>unset</td>
+<td>Cloud region override</td>
+</tr>
+<tr>
+<td><code>--verbose</code>, <code>-v</code></td>
+<td>off</td>
+<td>Verbose output</td>
+</tr>
+<tr>
+<td><code>aider_args...</code></td>
+<td>passthrough</td>
+<td>Additional Aider arguments</td>
+</tr>
+</tbody>
+</table>
+<p>Requires the <code>aider</code> binary on the host.</p>
+<h3 id="cassandra-wrap-cursor"><code>cassandra wrap cursor</code><a class="headerlink" href="#cassandra-wrap-cursor" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>cassandra<span class="w"> </span>wrap<span class="w"> </span>cursor
+<a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>cassandra<span class="w"> </span>wrap<span class="w"> </span>cursor<span class="w"> </span>--port<span class="w"> </span><span class="m">9999</span>
+<a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a>cassandra<span class="w"> </span>wrap<span class="w"> </span>cursor<span class="w"> </span>--no-rtk
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--port</code>, <code>-p</code></td>
+<td><code>8787</code></td>
+<td>Proxy port</td>
+</tr>
+<tr>
+<td><code>--no-rtk</code></td>
+<td>off</td>
+<td>Skip <code>rtk</code> installation and <code>.cursorrules</code> injection</td>
+</tr>
+<tr>
+<td><code>--no-proxy</code></td>
+<td>off</td>
+<td>Reuse an existing proxy</td>
+</tr>
+<tr>
+<td><code>--learn</code></td>
+<td>off</td>
+<td>Enable live traffic learning</td>
+</tr>
+<tr>
+<td><code>--verbose</code>, <code>-v</code></td>
+<td>off</td>
+<td>Verbose output</td>
+</tr>
+</tbody>
+</table>
+<p>This command prints Cursor configuration instructions and waits while the proxy stays up. It does <strong>not</strong> launch Cursor directly.</p>
+<h3 id="cassandra-wrap-openclaw"><code>cassandra wrap openclaw</code><a class="headerlink" href="#cassandra-wrap-openclaw" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>cassandra<span class="w"> </span>wrap<span class="w"> </span>openclaw
+<a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>cassandra<span class="w"> </span>wrap<span class="w"> </span>openclaw<span class="w"> </span>--plugin-path<span class="w"> </span>./plugins/openclaw
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--plugin-path</code></td>
+<td>unset</td>
+<td>Local plugin source directory</td>
+</tr>
+<tr>
+<td><code>--plugin-spec</code></td>
+<td><code>cassandra-ai/openclaw</code></td>
+<td>NPM plugin spec</td>
+</tr>
+<tr>
+<td><code>--skip-build</code></td>
+<td>off</td>
+<td>Skip local <code>npm install</code> / build steps</td>
+</tr>
+<tr>
+<td><code>--copy</code></td>
+<td>off</td>
+<td>Copy plugin instead of linked install</td>
+</tr>
+<tr>
+<td><code>--proxy-port</code></td>
+<td><code>8787</code></td>
+<td>Cassandra proxy port</td>
+</tr>
+<tr>
+<td><code>--startup-timeout-ms</code></td>
+<td><code>20000</code></td>
+<td>Proxy startup timeout</td>
+</tr>
+<tr>
+<td><code>--gateway-provider-id</code></td>
+<td>repeatable</td>
+<td>OpenClaw provider IDs routed through Cassandra</td>
+</tr>
+<tr>
+<td><code>--python-path</code></td>
+<td>unset</td>
+<td>Python launcher override</td>
+</tr>
+<tr>
+<td><code>--no-auto-start</code></td>
+<td>off</td>
+<td>Disable plugin auto-start behavior</td>
+</tr>
+<tr>
+<td><code>--no-restart</code></td>
+<td>off</td>
+<td>Do not restart the OpenClaw gateway</td>
+</tr>
+<tr>
+<td><code>--verbose</code>, <code>-v</code></td>
+<td>off</td>
+<td>Verbose output</td>
+</tr>
+</tbody>
+</table>
+<p>Requires the <code>openclaw</code> binary on the host, and local-source mode may also require <code>npm</code>. In Docker-native mode, the installed host wrapper drives the host <code>openclaw</code> CLI while the plugin auto-starts the host <code>cassandra</code> wrapper from <code>PATH</code>.</p>
+<h2 id="cassandra-unwrap"><code>cassandra unwrap</code><a class="headerlink" href="#cassandra-unwrap" title="Permanent link">&para;</a></h2>
+<p>Undo durable wrapping for supported tools.</p>
+<h3 id="cassandra-unwrap-openclaw"><code>cassandra unwrap openclaw</code><a class="headerlink" href="#cassandra-unwrap-openclaw" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a>cassandra<span class="w"> </span>unwrap<span class="w"> </span>openclaw
+<a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>cassandra<span class="w"> </span>unwrap<span class="w"> </span>openclaw<span class="w"> </span>--no-restart
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--no-restart</code></td>
+<td>off</td>
+<td>Do not restart the OpenClaw gateway</td>
+</tr>
+<tr>
+<td><code>--verbose</code>, <code>-v</code></td>
+<td>off</td>
+<td>Verbose output</td>
+</tr>
+</tbody>
+</table>
+<p>This disables the Cassandra OpenClaw plugin and restores the legacy context engine slot.</p>
+<h2 id="docker-native-parity-matrix">Docker-native parity matrix<a class="headerlink" href="#docker-native-parity-matrix" title="Permanent link">&para;</a></h2>
+<p>This matrix compares the <strong>Python CLI contract</strong> to the Docker-native host wrapper added in this branch.</p>
+<p>Legend:</p>
+<ul>
+<li><strong>native in container</strong> — the command runs entirely inside the Cassandra container</li>
+<li><strong>host-bridged</strong> — Cassandra runs in Docker, but the wrapped external tool still runs on the host</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Command path</th>
+<th>Python CLI</th>
+<th>Docker-native wrapper</th>
+<th>Parity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cassandra proxy</code></td>
+<td>native</td>
+<td>native in container</td>
+<td>full</td>
+</tr>
+<tr>
+<td><code>cassandra learn</code></td>
+<td>native</td>
+<td>native in container</td>
+<td>full</td>
+</tr>
+<tr>
+<td><code>cassandra perf</code></td>
+<td>native</td>
+<td>native in container</td>
+<td>full</td>
+</tr>
+<tr>
+<td><code>cassandra evals memory</code></td>
+<td>native</td>
+<td>native in container</td>
+<td>full</td>
+</tr>
+<tr>
+<td><code>cassandra evals memory-v2</code></td>
+<td>native</td>
+<td>native in container</td>
+<td>full</td>
+</tr>
+<tr>
+<td><code>cassandra memory ...</code></td>
+<td>native (when memory deps are available)</td>
+<td>native in container</td>
+<td>full</td>
+</tr>
+<tr>
+<td><code>cassandra mcp install</code></td>
+<td>native</td>
+<td>native in container</td>
+<td>full</td>
+</tr>
+<tr>
+<td><code>cassandra mcp uninstall</code></td>
+<td>native</td>
+<td>native in container</td>
+<td>full</td>
+</tr>
+<tr>
+<td><code>cassandra mcp status</code></td>
+<td>native</td>
+<td>native in container</td>
+<td>full</td>
+</tr>
+<tr>
+<td><code>cassandra mcp serve</code></td>
+<td>native</td>
+<td>native in container</td>
+<td>full</td>
+</tr>
+<tr>
+<td><code>cassandra install apply|status|start|stop|restart|remove</code></td>
+<td>native</td>
+<td>Docker-native wrapper for <code>persistent-docker</code>; compose remains an alternative</td>
+<td>partial</td>
+</tr>
+<tr>
+<td><code>cassandra wrap claude</code></td>
+<td>native</td>
+<td>host-bridged</td>
+<td>partial</td>
+</tr>
+<tr>
+<td><code>cassandra wrap copilot</code></td>
+<td>native</td>
+<td>not implemented in Docker-native wrapper</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>cassandra wrap codex</code></td>
+<td>native</td>
+<td>host-bridged</td>
+<td>partial</td>
+</tr>
+<tr>
+<td><code>cassandra wrap aider</code></td>
+<td>native</td>
+<td>host-bridged</td>
+<td>partial</td>
+</tr>
+<tr>
+<td><code>cassandra wrap cursor</code></td>
+<td>native</td>
+<td>host-bridged</td>
+<td>partial</td>
+</tr>
+<tr>
+<td><code>cassandra wrap openclaw</code></td>
+<td>native</td>
+<td>host-bridged</td>
+<td>partial</td>
+</tr>
+<tr>
+<td><code>cassandra unwrap openclaw</code></td>
+<td>native</td>
+<td>host-bridged</td>
+<td>partial</td>
+</tr>
+</tbody>
+</table>
+<p>For the Docker-native execution model itself, see <a href="../docker-install/">Docker-Native Install</a>. For persistent service/task/docker lifecycle management, see <a href="../persistent-installs/">Persistent Installs</a>.</p>
+<h2 id="hidden-and-compatibility-only-command-paths">Hidden and compatibility-only command paths<a class="headerlink" href="#hidden-and-compatibility-only-command-paths" title="Permanent link">&para;</a></h2>
+<p>These exist in code but are intentionally excluded from normal user docs:</p>
+<ul>
+<li><code>cassandra memory-eval</code></li>
+<li><code>cassandra memory-eval-v2</code></li>
+<li>hidden internal <code>--prepare-only</code> flags on <code>wrap</code> subcommands</li>
+</ul>
+<p>If you are documenting operational behavior or debugging internal wrapper flows, refer to the implementation in <code>cassandra/cli/wrap.py</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.top", "navigation.instant", "content.code.copy", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
