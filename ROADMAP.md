@@ -119,22 +119,34 @@ Full detail in [REALIGNMENT/](REALIGNMENT/INDEX.md).
 
 | Phase | What | Status |
 |---|---|---|
-| A — Lockdown | Stop the cache-busting bugs (passthrough on `/v1/messages`) | Implemented (8/8 PR markers found) |
-| B — Live-zone engine | Delete ~10K LOC (ICM/scoring/relevance), rebuild compression | Implemented (7/7) |
-| C — Rust proxy paths | Port remaining handlers, byte-level SSE parser | Implemented (5/5) |
-| D — Bedrock/Vertex native | Replace the currently-fake LiteLLM conversion | Implemented (5/5) |
-| E — Cache stabilization | Deterministic tool/schema ordering | Implemented (6/6) |
-| F — Auth-mode policy | PAYG/OAuth/subscription-aware compression | Implemented (4/4) |
-| G — RTK + observability | Broader wrap-CLI support, metrics | Implemented (3/3) |
+| A — Lockdown | Stop the cache-busting bugs (passthrough on `/v1/messages`) | **Verified** genuinely implemented (8/8, real logic + tests, not stubs) |
+| B — Live-zone engine | Delete ~10K LOC (ICM/scoring/relevance), rebuild compression | Implemented (7/7 markers) — not yet spot-checked |
+| C — Rust proxy paths | Port remaining handlers, byte-level SSE parser | Implemented (5/5 markers) — not yet spot-checked |
+| D — Bedrock/Vertex native | Replace the currently-fake LiteLLM conversion | Implemented (5/5 markers) — not yet spot-checked |
+| E — Cache stabilization | Deterministic tool/schema ordering | Implemented (6/6 markers) — not yet spot-checked |
+| F — Auth-mode policy | PAYG/OAuth/subscription-aware compression | Implemented (4/4 markers) — not yet spot-checked |
+| G — RTK + observability | Broader wrap-CLI support, metrics | Implemented (3/3 markers) — not yet spot-checked |
 | H — Python retirement | Delete the Python proxy once Rust hits parity | Mostly not started (1/4 — only PR-H2) |
 | I — Test infra | SHA-256 round-trip tests, parity gates | Untagged / unclear (0/10 markers, but tests/ has ~7,700 tests) |
 
-Next real step: audit whether the Python proxy (`cassandra/proxy/`, ~19K
-LOC) can actually be retired now that A–G claim completion, or whether
-those PR markers overstate how done each phase really is (markers confirm
-a PR *landed*, not that it fully satisfies the phase's spec — worth
-spot-checking a few against [REALIGNMENT/](REALIGNMENT/INDEX.md) before
-trusting this table blindly).
+**Phase A spot-check result (2026-07-02):** all 8 PR-A markers verified
+against actual code, not just grep — read the real implementation of
+each (`cache_control.rs`, `helpers.py`, `streaming.py`, `headers.rs`,
+`cache_aligner.py`, `SessionBetaTracker`, etc.) and confirmed against
+[REALIGNMENT/03-phase-A-lockdown.md](REALIGNMENT/03-phase-A-lockdown.md).
+Verdict: genuinely done, no stubs/no-ops/TODOs blocking any of them.
+Two notes: (1) several implementations live in different files/functions
+than the spec names — drift in location, not in substance; (2) PR-A1's
+"pure passthrough stub" has already been superseded by live Phase B
+compression code gated behind `CompressionMode` — the codebase is ahead
+of Phase A's literal spec text, not behind it.
+
+Next real step: same spot-check treatment for B–G (only A has been
+read against its spec so far — B–G's "Implemented" status still rests
+on marker-grep alone, which only proves *a PR landed*, not that it
+fully satisfies its phase's spec). Then audit whether the Python proxy
+(`cassandra/proxy/`, ~19K LOC) can actually be retired now that A–G
+*claim* completion.
 
 [12-decisions-needed.md](REALIGNMENT/12-decisions-needed.md) lists 15
 decisions the plan originally called blocking for Phase A (ICM deletion
