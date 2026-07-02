@@ -7,6 +7,13 @@
 //! byte-equal. Compression of stored items is C5+/B-phase territory;
 //! these tests pin the byte-fidelity contract through the entire
 //! conversations CRUD surface.
+//!
+//! The `tracing_capture` module below covers PR-C4's OTHER
+//! requirement (distinct from the `/v1/conversations*` CRUD surface
+//! above): when a `/v1/responses` request carries `conversation:
+//! {"id": "conv_..."}`, live-zone compression must be disabled
+//! entirely -- see `crate::conversations::conversation_id` and its
+//! call site in `compression::live_zone_responses`.
 
 mod common;
 
@@ -345,4 +352,136 @@ async fn passthrough_disabled_falls_through_to_catch_all() {
     let got = captured.lock().unwrap().clone().expect("body captured");
     assert_byte_equal(&body, &got);
     proxy.shutdown().await;
+}
+
+// ─── PR-C4: conversation.id in a /v1/responses body disables ───────
+// ─── live-zone compression entirely ─────────────────────────────────
+
+mod conversations_api_compression_skip {
+    use super::*;
+    use std::sync::Mutex as StdMutex;
+    use std::sync::OnceLock;
+    use tracing_subscriber::fmt::MakeWriter;
+
+    #[derive(Clone)]
+    struct CaptureWriter {
+        inner: Arc<StdMutex<Vec<u8>>>,
+    }
+
+    impl std::io::Write for CaptureWriter {
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+            self.inner.lock().unwrap().extend_from_slice(buf);
+            Ok(buf.len())
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    impl<'a> MakeWriter<'a> for CaptureWriter {
+        type Writer = Self;
+        fn make_writer(&'a self) -> Self::Writer {
+            self.clone()
+        }
+    }
+
+    fn buffer() -> &'static Arc<StdMutex<Vec<u8>>> {
+        static BUFFER: OnceLock<Arc<StdMutex<Vec<u8>>>> = OnceLock::new();
+        BUFFER.get_or_init(|| {
+            let buf = Arc::new(StdMutex::new(Vec::new()));
+            let writer = CaptureWriter { inner: buf.clone() };
+            let subscriber = tracing_subscriber::fmt()
+                .json()
+                .with_writer(writer)
+                // INFO per the PR-C4 acceptance criterion: "The
+                // Conversations API warning appears in logs at INFO
+                // level with a conversation_id field."
+                .with_max_level(tracing::Level::INFO)
+                .finish();
+            // Best-effort install: other integration test binaries in
+            // this crate (e.g. integration_volatile_detector.rs) may
+            // already have set a default subscriber in a separate
+            // process; within this binary we only need one.
+            let _ = tracing::subscriber::set_global_default(subscriber);
+            buf
+        })
+    }
+
+    #[tokio::test]
+    async fn conversation_id_present_skips_compression_warns() {
+        let buf = buffer();
+        buf.lock().unwrap().clear();
+
+        let upstream = MockServer::start().await;
+        let captured = mount_capture(&upstream, "POST", "/v1/responses", r#"{"ok":true}"#).await;
+        let proxy = start_proxy_with(&upstream.uri(), |c| {
+            c.compression = true;
+            c.compression_mode = cassandra_proxy::config::CompressionMode::LiveZone;
+        })
+        .await;
+
+        // function_call_output well over the 2 KiB output-item floor
+        // -- large enough that it WOULD be compressed if this weren't
+        // a Conversations API request.
+        let large_output = "x".repeat(4096);
+        let payload = json!({
+            "model": "gpt-5.1",
+            "conversation": {"id": "conv_test_abc123"},
+            "input": [
+                {
+                    "type": "function_call_output",
+                    "call_id": "call_1",
+                    "output": large_output,
+                }
+            ],
+        });
+        let body = serde_json::to_vec(&payload).unwrap();
+        let resp = reqwest::Client::new()
+            .post(format!("{}/v1/responses", proxy.url()))
+            .header("content-type", "application/json")
+            .body(body.clone())
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), 200);
+
+        // Give the async tracing emitter a beat to flush.
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+
+        let logs = String::from_utf8(buf.lock().unwrap().clone()).expect("logs are utf-8");
+        assert!(
+            logs.contains("conversations_api"),
+            "expected reason=conversations_api in logs; got: {logs}"
+        );
+        assert!(
+            logs.contains("conv_test_abc123"),
+            "expected the real conversation_id in logs; got: {logs}"
+        );
+        assert!(
+            logs.contains(r#""decision":"passthrough""#),
+            "expected decision=passthrough in logs; got: {logs}"
+        );
+
+        // Live-zone compression specifically did not run: the
+        // function_call_output's 4096-byte payload survives intact in
+        // the upstream-received bytes, even though it's well over
+        // every content-type's compression threshold. (Not asserting
+        // full request byte-equality here -- PAYG's independent PR-E4
+        // prompt_cache_key auto-injection is expected to still apply;
+        // that's unrelated to live-zone compression and not something
+        // PR-C4 exempts Conversations API requests from.)
+        let upstream_received = captured
+            .lock()
+            .unwrap()
+            .clone()
+            .expect("upstream should have captured a body");
+        let received_str = String::from_utf8(upstream_received).expect("utf8");
+        assert!(
+            received_str.contains(&large_output),
+            "the 4096-byte function_call_output must survive uncompressed \
+             when conversation.id is present"
+        );
+
+        proxy.shutdown().await;
+    }
 }

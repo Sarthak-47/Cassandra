@@ -104,6 +104,33 @@ pub fn compress_openai_responses_request(
         }
     };
 
+    // PR-C4: Conversations API awareness. Checked before the
+    // has_array_field gate below -- a Conversations API request may
+    // legitimately omit `input`/`messages` entirely (the new turn can
+    // be threaded server-side), which would otherwise misreport as
+    // `NoMessages`. See `crate::conversations` for why this disables
+    // compression rather than attempting a decision against a
+    // possibly-incomplete local view.
+    if let Some(conversation_id) = crate::conversations::conversation_id(&parsed) {
+        tracing::info!(
+            event = "compression_decision",
+            request_id = %request_id,
+            path = "/v1/responses",
+            method = "POST",
+            compression_mode = mode.as_str(),
+            decision = "passthrough",
+            reason = "conversations_api",
+            conversation_id = %conversation_id,
+            body_bytes = body.len(),
+            "openai responses compression decision: Conversations API request, \
+             disabling live-zone compression (local view may be incomplete)"
+        );
+        crate::observability::record_conversations_api_request();
+        return Outcome::Passthrough {
+            reason: PassthroughReason::ConversationsApi,
+        };
+    }
+
     let has_array_field = parsed
         .get("input")
         .or_else(|| parsed.get("messages"))

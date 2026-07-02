@@ -113,6 +113,14 @@ pub enum PassthroughReason {
     /// The compression-mode config is `Off`. The dispatcher is not
     /// invoked.
     ModeOff,
+    /// PR-C4: the request carries `conversation: {"id": "conv_..."}`
+    /// (OpenAI Responses Conversations API). The server-side
+    /// conversation object, not this request body, is the source of
+    /// truth for prior turns -- the proxy's local view may be
+    /// incomplete, so live-zone compression is disabled entirely
+    /// rather than risk a decision against partial state. Only
+    /// constructed by the `/v1/responses` dispatcher.
+    ConversationsApi,
 }
 
 /// Live-zone compression entry point for Anthropic `/v1/messages`.

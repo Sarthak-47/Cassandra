@@ -253,6 +253,12 @@ pub async fn handle_metrics() -> Response {
     // as `proxy_passthrough_bytes_modified_total`) is visible from
     // boot rather than only appearing after the first real drift.
     let drift_counter = super::proxy_metrics::prefix_drift_detected_counter(reg);
+    // Phase C PR-C4 remediation: force lazy registration so
+    // `proxy_conversations_api_request_count_total` is advertised
+    // from boot. Unlike the `*Vec` counters above, a plain `IntCounter`
+    // needs no `__init__` sentinel touch below -- it has exactly one
+    // row and reads 0 as soon as it's registered.
+    let _ = super::proxy_metrics::conversations_api_request_counter(reg);
 
     const INIT_SENTINEL: &str = "__init__";
     rejected_counter

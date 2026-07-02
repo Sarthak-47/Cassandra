@@ -10,11 +10,13 @@
 
 use std::sync::OnceLock;
 
-use prometheus::{IntCounterVec, IntGaugeVec, Opts, Registry};
+use prometheus::{IntCounter, IntCounterVec, IntGaugeVec, Opts, Registry};
 
 use super::metric_names::{
     LABEL_PATH, LABEL_PROVIDER, LABEL_STATUS, LABEL_TIER, METRIC_PREFIX_DRIFT_DETECTED_TOTAL,
-    METRIC_PREFIX_DRIFT_DETECTED_TOTAL_HELP, METRIC_PROXY_PASSTHROUGH_BYTES_MODIFIED_TOTAL,
+    METRIC_PREFIX_DRIFT_DETECTED_TOTAL_HELP, METRIC_PROXY_CONVERSATIONS_API_REQUEST_COUNT_TOTAL,
+    METRIC_PROXY_CONVERSATIONS_API_REQUEST_COUNT_TOTAL_HELP,
+    METRIC_PROXY_PASSTHROUGH_BYTES_MODIFIED_TOTAL,
     METRIC_PROXY_PASSTHROUGH_BYTES_MODIFIED_TOTAL_HELP,
     METRIC_PROXY_RATE_LIMIT_REMAINING_INPUT_TOKENS,
     METRIC_PROXY_RATE_LIMIT_REMAINING_INPUT_TOKENS_HELP,
@@ -318,6 +320,39 @@ pub fn record_prefix_drift_detected(provider: &str) {
         metric = METRIC_PREFIX_DRIFT_DETECTED_TOTAL,
         provider = %provider,
         "incremented prefix_drift_detected_total"
+    );
+}
+
+// ---------- proxy_conversations_api_request_count_total ----------
+
+/// Phase C PR-C4: count of `/v1/responses` requests carrying
+/// `conversation.id`. Unlabelled -- see `metric_names::
+/// METRIC_PROXY_CONVERSATIONS_API_REQUEST_COUNT_TOTAL_HELP` for why.
+/// A plain `IntCounter` (not `*Vec`) always has exactly one row, so
+/// unlike the `*Vec` metrics elsewhere in this file it doesn't need
+/// the H3 force-zero touch to appear in a fresh-boot scrape --
+/// registration alone is enough.
+pub fn conversations_api_request_counter(registry: &Registry) -> &'static IntCounter {
+    static COUNTER: OnceLock<IntCounter> = OnceLock::new();
+    COUNTER.get_or_init(|| {
+        let counter = IntCounter::with_opts(Opts::new(
+            METRIC_PROXY_CONVERSATIONS_API_REQUEST_COUNT_TOTAL,
+            METRIC_PROXY_CONVERSATIONS_API_REQUEST_COUNT_TOTAL_HELP,
+        ))
+        .expect("proxy_conversations_api_request_count_total descriptor is well-formed");
+        registry
+            .register(Box::new(counter.clone()))
+            .expect("proxy_conversations_api_request_count_total registers exactly once");
+        counter
+    })
+}
+
+pub fn record_conversations_api_request() {
+    conversations_api_request_counter(super::prometheus::registry()).inc();
+    tracing::debug!(
+        event = "metric_recorded",
+        metric = METRIC_PROXY_CONVERSATIONS_API_REQUEST_COUNT_TOTAL,
+        "incremented proxy_conversations_api_request_count_total"
     );
 }
 

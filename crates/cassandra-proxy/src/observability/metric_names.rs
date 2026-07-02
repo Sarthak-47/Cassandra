@@ -107,6 +107,19 @@ pub const METRIC_PREFIX_DRIFT_DETECTED_TOTAL_HELP: &str =
      config, and an unbounded label is a cardinality-DoS vector. Per-model \
      detail lives in the paired cache_drift_observed log line instead.";
 
+// ---------- proxy_conversations_api_request_count_total ----------
+
+pub const METRIC_PROXY_CONVERSATIONS_API_REQUEST_COUNT_TOTAL: &str =
+    "proxy_conversations_api_request_count_total";
+pub const METRIC_PROXY_CONVERSATIONS_API_REQUEST_COUNT_TOTAL_HELP: &str =
+    "Count of /v1/responses requests carrying conversation.id (OpenAI \
+     Conversations API). Live-zone compression is disabled entirely for \
+     these -- the proxy's local view of the conversation may be \
+     incomplete, since the server-side conversation object is the source \
+     of truth for prior turns. Unlabelled: no natural dimension to slice \
+     by per the spec, and conversation_id itself is unbounded \
+     per-customer input, so it stays in the paired log line only.";
+
 // Phase G PR-G3 remediation (C3 + C4): the metric-name constants
 // for `proxy_image_generation_call_log_redacted_total`,
 // `wrap_rtk_invocations_total`, and `wrap_rtk_tokens_saved_per_session`
