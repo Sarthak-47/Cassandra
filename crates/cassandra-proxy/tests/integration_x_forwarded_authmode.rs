@@ -24,10 +24,22 @@ async fn payg_adds_xfwd() {
     Mock::given(method("POST"))
         .and(path("/v1/messages"))
         .respond_with(move |req: &wiremock::Request| {
-            assert!(req.headers.get("x-forwarded-for").is_some(), "PAYG must get x-forwarded-for");
-            assert!(req.headers.get("x-forwarded-proto").is_some(), "PAYG must get x-forwarded-proto");
-            assert!(req.headers.get("x-forwarded-host").is_some(), "PAYG must get x-forwarded-host");
-            assert!(req.headers.get("x-request-id").is_some(), "PAYG must get x-request-id");
+            assert!(
+                req.headers.get("x-forwarded-for").is_some(),
+                "PAYG must get x-forwarded-for"
+            );
+            assert!(
+                req.headers.get("x-forwarded-proto").is_some(),
+                "PAYG must get x-forwarded-proto"
+            );
+            assert!(
+                req.headers.get("x-forwarded-host").is_some(),
+                "PAYG must get x-forwarded-host"
+            );
+            assert!(
+                req.headers.get("x-request-id").is_some(),
+                "PAYG must get x-request-id"
+            );
             ResponseTemplate::new(200).set_body_string("{}")
         })
         .mount(&upstream)
@@ -52,10 +64,22 @@ async fn oauth_adds_xfwd() {
     Mock::given(method("POST"))
         .and(path("/v1/messages"))
         .respond_with(move |req: &wiremock::Request| {
-            assert!(req.headers.get("x-forwarded-for").is_some(), "OAuth must get x-forwarded-for");
-            assert!(req.headers.get("x-forwarded-proto").is_some(), "OAuth must get x-forwarded-proto");
-            assert!(req.headers.get("x-forwarded-host").is_some(), "OAuth must get x-forwarded-host");
-            assert!(req.headers.get("x-request-id").is_some(), "OAuth must get x-request-id");
+            assert!(
+                req.headers.get("x-forwarded-for").is_some(),
+                "OAuth must get x-forwarded-for"
+            );
+            assert!(
+                req.headers.get("x-forwarded-proto").is_some(),
+                "OAuth must get x-forwarded-proto"
+            );
+            assert!(
+                req.headers.get("x-forwarded-host").is_some(),
+                "OAuth must get x-forwarded-host"
+            );
+            assert!(
+                req.headers.get("x-request-id").is_some(),
+                "OAuth must get x-request-id"
+            );
             ResponseTemplate::new(200).set_body_string("{}")
         })
         .mount(&upstream)
