@@ -6,7 +6,7 @@
 //! - Build/log output       → LogCompressor
 //! - Search-result tool_results → SearchCompressor
 //! - Git diff tool_results  → DiffCompressor
-//! - Source code            → no-op (Rust port pending)
+//! - Source code            → CodeCompressor (heuristic MVP)
 //! - Unknown / image / html → no-op
 //!
 //! Plus the cache-safety invariant: bytes outside the rewritten
@@ -262,59 +262,82 @@ fn diff_tool_result_routes_to_diff_compressor() {
 }
 
 #[test]
-fn source_code_tool_result_routes_to_no_op() {
-    // Detector classifies this as SourceCode. PR-B3 routes it to
-    // no-op (Rust code-compressor port pending). Pin the contract
-    // so a future "wire it up" PR can flip this assertion.
-    let code = "
-fn main() {
-    let x: i32 = 42;
-    let y = x * 2;
-    println!(\"{}\", y);
-    if x > 0 {
-        println!(\"positive\");
-    } else {
-        println!(\"non-positive\");
+fn source_code_tool_result_routes_to_code_compressor() {
+    // Structural markers (`use`, `#[derive]`, `pub struct`, `impl`)
+    // matching the confirmed-detected Rust fixture in
+    // content_detector.rs's own `rust_code_detected` test, with a
+    // genuinely long function body (60 statement lines) inserted so
+    // CodeCompressor's body-run truncation reliably fires.
+    let mut code = String::from(
+        "use std::sync::Arc;\n\n#[derive(Debug)]\npub struct Foo {\n    bar: u32,\n}\n\nimpl Foo {\n    pub fn process_all(&self, items: &[u32]) -> Vec<u32> {\n        let mut results = Vec::new();\n",
+    );
+    for i in 0..60 {
+        code.push_str(&format!("        results.push(items[{i}] + self.bar);\n"));
     }
-}
-"
-    .repeat(20);
+    code.push_str("        results\n    }\n}\n");
+
     let (body, _) = body_with_tool_result(&code);
     let out = dispatch(&body);
     let manifest = match &out {
-        LiveZoneOutcome::NoChange { manifest } => manifest,
-        LiveZoneOutcome::Modified { manifest, .. } => {
-            panic!("PR-B3 must NOT compress SourceCode (Rust port pending). manifest: {manifest:?}")
-        }
+        LiveZoneOutcome::Modified { manifest, .. } => manifest,
+        LiveZoneOutcome::NoChange { manifest } => panic!(
+            "expected CodeCompressor to truncate a 60-statement function body; got NoChange. manifest: {manifest:?}"
+        ),
     };
     let action = manifest
         .block_outcomes
         .iter()
         .find(|b| b.block_type == "tool_result")
-        .expect("tool_result block present")
+        .expect("tool_result block present in manifest")
         .action
         .clone();
     match action {
-        BlockAction::NoCompressionApplied { content_type } => {
-            // Source-code-shaped content above the SourceCode byte
-            // threshold (2 KiB) but below any active compressor:
-            // SmartCrusher / log / search / diff don't apply, and
-            // the Rust code-compressor port is not yet wired.
+        BlockAction::Compressed {
+            strategy,
+            original_bytes,
+            compressed_bytes,
+            original_tokens,
+            compressed_tokens,
+        } => {
+            assert_eq!(
+                strategy, "code_compressor",
+                "expected CodeCompressor dispatch"
+            );
             assert!(
-                content_type == "source_code" || content_type == "text",
-                "unexpected content_type tag: {content_type}"
+                compressed_bytes < original_bytes,
+                "CodeCompressor must produce strictly smaller output ({compressed_bytes} < {original_bytes})"
+            );
+            assert!(
+                compressed_tokens < original_tokens,
+                "tokenizer-validated gate (PR-B4) must accept only token-shrinking output \
+                 ({compressed_tokens} < {original_tokens})"
             );
         }
-        BlockAction::BelowByteThreshold { content_type, .. } => {
-            // Detector may classify code-with-prose as PlainText
-            // (5 KiB threshold) — for ~2.6 KiB of mixed code/prose
-            // that still routes to no-op for B4. Pin the tag.
-            assert!(
-                content_type == "text" || content_type == "source_code",
-                "unexpected content_type tag: {content_type}"
-            );
+        other => panic!("expected BlockAction::Compressed, got {other:?}"),
+    }
+
+    // The function's signature and closing brace survive verbatim --
+    // CodeCompressor's load-bearing safety property.
+    let new_body = match &out {
+        LiveZoneOutcome::Modified { new_body, .. } => new_body.get(),
+        _ => unreachable!(),
+    };
+    assert!(new_body.contains("pub fn process_all(&self, items: &[u32]) -> Vec<u32> {"));
+}
+
+#[test]
+fn short_source_code_below_threshold_no_op() {
+    // Well under both the SourceCode byte threshold (PR-B4, 2 KiB)
+    // and CodeCompressor's own min_lines_for_compression -- nothing
+    // should fire.
+    let code = "fn add(a: i32, b: i32) -> i32 {\n    a + b\n}\n";
+    let (body, _) = body_with_tool_result(code);
+    let out = dispatch(&body);
+    match &out {
+        LiveZoneOutcome::NoChange { .. } => {}
+        LiveZoneOutcome::Modified { manifest, .. } => {
+            panic!("tiny source snippet must not be compressed. manifest: {manifest:?}")
         }
-        other => panic!("expected NoCompressionApplied or BelowByteThreshold, got {other:?}"),
     }
 }
 

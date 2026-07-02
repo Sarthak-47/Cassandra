@@ -101,6 +101,7 @@ use serde_json::value::RawValue;
 use serde_json::Value;
 use thiserror::Error;
 
+use super::code_compressor::{CodeCompressor, CodeCompressorConfig};
 use super::content_detector::{detect_content_type, ContentType};
 use super::diff_compressor::{DiffCompressor, DiffCompressorConfig};
 use super::log_compressor::{LogCompressor, LogCompressorConfig};
@@ -119,6 +120,8 @@ const STRATEGY_LOG_COMPRESSOR: &str = "log_compressor";
 const STRATEGY_SEARCH_COMPRESSOR: &str = "search_compressor";
 /// Strategy tag emitted when DiffCompressor rewrote a unified-diff block.
 const STRATEGY_DIFF_COMPRESSOR: &str = "diff_compressor";
+/// Strategy tag emitted when CodeCompressor rewrote a source-code block.
+const STRATEGY_CODE_COMPRESSOR: &str = "code_compressor";
 
 /// Empty query context passed to compressors that take a relevance
 /// query string. PR-B3 dispatcher does not yet plumb the user's last
@@ -547,6 +550,11 @@ fn search_compressor() -> &'static SearchCompressor {
 fn diff_compressor() -> &'static DiffCompressor {
     static INSTANCE: OnceLock<DiffCompressor> = OnceLock::new();
     INSTANCE.get_or_init(|| DiffCompressor::new(DiffCompressorConfig::default()))
+}
+
+fn code_compressor() -> &'static CodeCompressor {
+    static INSTANCE: OnceLock<CodeCompressor> = OnceLock::new();
+    INSTANCE.get_or_init(|| CodeCompressor::new(CodeCompressorConfig::default()))
 }
 
 // ─── Public entry point ────────────────────────────────────────────────
@@ -1324,7 +1332,7 @@ enum DispatchResult {
 /// - `BuildOutput` → LogCompressor
 /// - `SearchResults` → SearchCompressor
 /// - `GitDiff` → DiffCompressor
-/// - `SourceCode` → no-op (Rust port pending; see TODO below)
+/// - `SourceCode` → CodeCompressor (heuristic MVP, not a tree-sitter port -- see its module doc)
 /// - `PlainText` → no-op (PR-B4 wires Kompress)
 /// - `Html` → no-op (no compressor)
 fn dispatch_compressor(text: &str, content_type: ContentType) -> DispatchResult {
@@ -1387,13 +1395,22 @@ fn dispatch_compressor(text: &str, content_type: ContentType) -> DispatchResult 
                 compressed: result.compressed,
             }
         }
-        // TODO(PR-B4 / Rust code-compressor port): Python has a
-        // CodeAwareCompressor; the Rust port is not yet shipped. Once
-        // that crate lands, `ContentType::SourceCode` routes here
-        // exactly as the others above.
-        ContentType::SourceCode => DispatchResult::NoOp {
-            content_type: content_type.as_str(),
-        },
+        // PR-B3 remediation: `code_compressor` is a deliberately
+        // scoped heuristic MVP, not a port of Python's tree-sitter
+        // CodeAwareCompressor -- see the module doc on
+        // `super::code_compressor` for why and what that means.
+        ContentType::SourceCode => {
+            let result = code_compressor().compress(text);
+            if !result.was_modified() {
+                return DispatchResult::NoOp {
+                    content_type: content_type.as_str(),
+                };
+            }
+            DispatchResult::Compressed {
+                strategy: STRATEGY_CODE_COMPRESSOR,
+                compressed: result.compressed,
+            }
+        }
         // TODO(PR-B4): wire Kompress (lossless prose compressor) for
         // PlainText. For now, leave untouched.
         ContentType::PlainText => DispatchResult::NoOp {
