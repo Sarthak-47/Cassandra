@@ -169,9 +169,152 @@ macro_rules! stub_comparator {
     };
 }
 
-stub_comparator!(LogCompressorComparator, "log_compressor");
 stub_comparator!(CacheAlignerComparator, "cache_aligner");
 stub_comparator!(CcrComparator, "ccr");
+
+/// Real comparator for the `log_compressor` transform.
+///
+/// # This is a regression lock, not a live cross-language parity check
+///
+/// Unlike the other real comparators here, Python's
+/// `cassandra.transforms.log_compressor.LogCompressor` is itself a
+/// thin PyO3 wrapper that delegates to this exact Rust struct (see
+/// the module docstring in `cassandra/transforms/log_compressor.py`:
+/// "Rust-backed log compressor... `compress()` delegates to Rust
+/// end-to-end"). There is no independent Python algorithm left to
+/// diverge from -- what this comparator locks in is that today's
+/// Rust code still reproduces the 20 fixtures recorded 2026-04-23,
+/// catching accidental regressions in future changes to
+/// `crates/cassandra-core/src/transforms/log_compressor.rs`
+/// (including the documented 2026-04-30 bug-fixing pass, which
+/// happened AFTER these fixtures were recorded -- empirically none of
+/// the 20 recorded inputs exercise the fixed edge cases, so all 20
+/// still match byte-for-byte; a future fixture that does exercise one
+/// would need re-recording, not a code change here).
+///
+/// Must call [`LogCompressor::compress_with_store`], not `compress()`
+/// -- the no-store shortcut skips CCR marker/cache_key emission
+/// entirely, which would show every ratio-cleared fixture as a
+/// spurious diff (caught during development: the first version of
+/// this comparator used `compress()` and 1 of 20 fixtures "diverged"
+/// on `cache_key: null` vs. a real hash -- not a Rust-vs-Python bug,
+/// just a missing store in the comparator).
+pub struct LogCompressorComparator;
+
+impl TransformComparator for LogCompressorComparator {
+    fn name(&self) -> &str {
+        "log_compressor"
+    }
+
+    fn run(
+        &self,
+        input: &serde_json::Value,
+        config: &serde_json::Value,
+    ) -> Result<serde_json::Value> {
+        use cassandra_core::ccr::InMemoryCcrStore;
+        use cassandra_core::transforms::{LogCompressor, LogCompressorConfig};
+
+        let content = input
+            .as_str()
+            .context("log_compressor fixture input must be a JSON string")?;
+
+        let defaults = LogCompressorConfig::default();
+        let cfg = LogCompressorConfig {
+            max_errors: config
+                .get("max_errors")
+                .and_then(|v| v.as_u64())
+                .map(|v| v as usize)
+                .unwrap_or(defaults.max_errors),
+            error_context_lines: config
+                .get("error_context_lines")
+                .and_then(|v| v.as_u64())
+                .map(|v| v as usize)
+                .unwrap_or(defaults.error_context_lines),
+            keep_first_error: config
+                .get("keep_first_error")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(defaults.keep_first_error),
+            keep_last_error: config
+                .get("keep_last_error")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(defaults.keep_last_error),
+            max_stack_traces: config
+                .get("max_stack_traces")
+                .and_then(|v| v.as_u64())
+                .map(|v| v as usize)
+                .unwrap_or(defaults.max_stack_traces),
+            stack_trace_max_lines: config
+                .get("stack_trace_max_lines")
+                .and_then(|v| v.as_u64())
+                .map(|v| v as usize)
+                .unwrap_or(defaults.stack_trace_max_lines),
+            max_warnings: config
+                .get("max_warnings")
+                .and_then(|v| v.as_u64())
+                .map(|v| v as usize)
+                .unwrap_or(defaults.max_warnings),
+            dedupe_warnings: config
+                .get("dedupe_warnings")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(defaults.dedupe_warnings),
+            keep_summary_lines: config
+                .get("keep_summary_lines")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(defaults.keep_summary_lines),
+            max_total_lines: config
+                .get("max_total_lines")
+                .and_then(|v| v.as_u64())
+                .map(|v| v as usize)
+                .unwrap_or(defaults.max_total_lines),
+            enable_ccr: config
+                .get("enable_ccr")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(defaults.enable_ccr),
+            min_lines_for_ccr: config
+                .get("min_lines_for_ccr")
+                .and_then(|v| v.as_u64())
+                .map(|v| v as usize)
+                .unwrap_or(defaults.min_lines_for_ccr),
+            // Python hardcodes 0.5 inline (see the wrapper's __init__);
+            // not a fixture-recorded config field.
+            min_compression_ratio_for_ccr: 0.5,
+        };
+
+        let compressor = LogCompressor::new(cfg);
+        // bias=1.0: Python's compress() never threads a caller-supplied
+        // bias through to the Rust call either (the wrapper's `bias`
+        // parameter isn't recorded in fixture config, and the retired
+        // Python signature didn't have adaptive bias at all).
+        //
+        // A real store is required here, not `compress()`'s `None`
+        // shortcut -- Python's wrapper always calls through with a
+        // live CCR store attached (`self._persist_to_python_ccr`), so
+        // fixtures recorded from it have a real `cache_key` and CCR
+        // marker whenever compression cleared the ratio threshold.
+        // The key itself is a pure hash of `content` (see
+        // `md5_hex_24` in log_compressor.rs), so a fresh ephemeral
+        // store per comparator call reproduces the same key.
+        let store = InMemoryCcrStore::new();
+        let (result, _stats) = compressor.compress_with_store(content, 1.0, Some(&store));
+
+        let stats_obj: serde_json::Map<String, serde_json::Value> = result
+            .stats
+            .into_iter()
+            .map(|(k, v)| (k, serde_json::json!(v)))
+            .collect();
+
+        Ok(serde_json::json!({
+            "cache_key": result.cache_key,
+            "compressed": result.compressed,
+            "compressed_line_count": result.compressed_line_count,
+            "compression_ratio": result.compression_ratio,
+            "format_detected": result.format_detected.as_str(),
+            "original": result.original,
+            "original_line_count": result.original_line_count,
+            "stats": serde_json::Value::Object(stats_obj),
+        }))
+    }
+}
 
 /// Real comparator for the `diff_compressor` transform. Drives the Rust port
 /// over the recorded fixture inputs and emits the Python-shaped JSON output
@@ -573,14 +716,18 @@ mod tests {
 
     #[test]
     fn stub_comparators_skip_rather_than_panic() {
+        // LogCompressorComparator is a real comparator now (see its
+        // impl above) -- use CacheAlignerComparator instead, still a
+        // genuine Phase-0 stub, so this test keeps testing what its
+        // name says.
         let tmp = tempdir();
         write_fixture(
             tmp.path(),
-            "log_compressor",
+            "cache_aligner",
             "case1",
             serde_json::json!({"compressed": "x"}),
         );
-        let report = run_comparator(tmp.path(), &LogCompressorComparator).unwrap();
+        let report = run_comparator(tmp.path(), &CacheAlignerComparator).unwrap();
         assert_eq!(report.skipped.len(), 1);
         assert_eq!(report.matched, 0);
     }
