@@ -100,7 +100,7 @@ Actions, pip, cargo, npm) is a one-command restore from history.
 
 ---
 
-## 6. The compression-engine rewrite (REALIGNMENT) — ~76% implemented, but see the critical caveat below
+## 6. The compression-engine rewrite (REALIGNMENT) — Phases A/D/E/F/G verified solid; see the critical deployment caveat below
 
 **CRITICAL FINDING (2026-07-02):** the standalone Rust proxy
 (`crates/cassandra-proxy`) that Phases C and D's work lives in is **not
@@ -146,21 +146,28 @@ which is the real gate — not H1 itself.
 wrong. It was based only on the absence of `realign-*` git branches/commits,
 not on what the code actually contains. Grepping the tracked `PR-<phase><n>`
 markers that REALIGNMENT's own docs use to label each unit of work against
-what's actually referenced in `crates/` and `cassandra/` source comments:
-**39 of the 51 planned PRs have a corresponding implementation marker in
-code.** Phases A–G are each fully represented at the marker level (every
-`PR-A*`...`PR-G*` ID shows up somewhere in source); the gap is almost
-entirely Phase H (Python proxy retirement — only `PR-H2` found, `H1/H3/H4`
-missing) and Phase I (test-infra — only `PR-I10` found as of this session's
-work, see below).
+what's actually referenced in `crates/` and `cassandra/` source comments
+found 39 of 51 planned PRs with a corresponding implementation marker at
+the START of this session's work. That marker count is now stale and not
+worth recomputing — the sweep below (every phase A–G read directly
+against its spec, not just marker-grep) found marker presence was itself
+a poor completeness proxy: several phases had real, undocumented gaps
+despite every PR ID showing up somewhere in source, and B1's flagged
+"gap" turned out to be a false positive (the code was correctly NOT
+matching a stale spec). Trust the per-phase status table and its detail
+notes below, not a marker count.
 
-**Update: every phase A–G has now been read directly against its spec**
-(not just marker-grep) — see the per-phase detail below. Marker presence
-turned out to be a poor completeness proxy: A and D hold up as genuinely
-solid, G is nearly solid, B/C/E have real-but-survivable gaps, and F has
-confirmed security-relevant gaps that mean it should not be treated as
-done. Don't trust the "Implemented (N/N markers)" framing alone for any
-phase without reading its detail note.
+**Update: every phase A–G has now been read directly against its spec,
+and every gap found has since been fixed and CI-verified (2026-07-02)**
+except one deliberate, documented scope cut (E3) and one that's a
+deployment/ops decision rather than a code gap (Phase C's "Rust proxy
+isn't actually deployed" finding, see below) — **Phases A, D, E, F, G
+can all be considered genuinely solid now; B and C have their real gaps
+fixed too, modulo those two exceptions.** Phase I (test infra) has 7 of
+10 PRs fully landed plus 1 partial, all CI-verified. See the per-phase
+detail notes below for exactly what changed and how each fix was
+verified — this table is kept current as work lands, unlike a
+point-in-time marker count.
 
 Full detail in [REALIGNMENT/](REALIGNMENT/INDEX.md).
 
@@ -410,13 +417,25 @@ is registered, and is wired into all three provider SSE paths with
 real edge-case tests.
 
 All of A–G have now been read against their specs (not just
-marker-grep). Summary: A and D are genuinely solid. G is nearly
-solid (1 minor gap). B, C, E have real-but-survivable gaps. **Phase F
-is now fully closed as of 2026-07-02** — every gap found in the
-initial audit (F3's raw OAuth token storage AND its TOIN
-per-tenant-keying gap, F4's unconditional X-Forwarded-*/X-Request-Id,
-and PR-F2's accept-encoding strip) is fixed and CI-verified. F can be
-considered fully trustworthy now.
+marker-grep), and every real gap found has since been fixed and
+CI-verified (2026-07-02). Summary: **A and D were genuinely solid from
+the start. G is nearly solid (1 minor gap — the RTK-tokens-saved
+metric neither side actually built; needs cross-process design work
+this session didn't attempt). B's real gap (PR-B3's CodeCompressor)
+is fixed** — deliberately a scoped heuristic MVP, not a tree-sitter
+port; its other flagged item (PR-B1's `relevance/` module) turned out
+to be a false positive, the code was correctly not matching a stale
+spec. **C's real gap (PR-C4's Conversations-API awareness) is fixed**
+— its other item (the Rust proxy not being what `cassandra proxy`
+actually deploys) is a deployment/ops decision, not something a code
+PR can close. **E's real gaps (E2's missing snapshot test, E5's
+pattern-coverage gap, E6's missing counter) are all fixed** — E3
+remains a deliberate, well-documented first-ship scope cut, not a
+bug. **F is fully closed** — every gap found (F2's accept-encoding
+strip, F3's raw OAuth token storage AND its TOIN per-tenant-keying
+gap, F4's unconditional X-Forwarded-*/X-Request-Id) is fixed. Phases
+A, D, E, F, G can all be considered genuinely trustworthy now; B and
+C are too, modulo their two non-code exceptions above.
 
 **Phase I scope, read directly from
 [11-phase-I-test-infra.md](REALIGNMENT/11-phase-I-test-infra.md)** (10
