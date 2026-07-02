@@ -35,9 +35,13 @@
 //! - One SHA-256 update over each of (system, tools, early messages).
 //!   Total ~200us on a 8 KB system prompt.
 //! - One LRU lookup + insert. `lru = "0.12"` is O(1) amortised.
-//! - One `tracing::info!` or `tracing::warn!`. No metric emission yet
-//!   (left for Phase F PR-F* when the global Prometheus registry can
-//!   accept session-scoped counters without a cardinality explosion).
+//! - One `tracing::info!` or `tracing::warn!`, plus (on genuine
+//!   drift only) one `prefix_drift_detected_total{provider}` counter
+//!   increment -- see `observability::proxy_metrics::
+//!   record_prefix_drift_detected`. Provider-only, not
+//!   session-scoped: the registry never accepts a per-session label
+//!   (unbounded cardinality), which is what the original deferral
+//!   note here was about before this counter landed.
 
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -62,6 +66,22 @@ pub enum ApiKind {
     OpenAiChat,
     /// `POST /v1/responses` (OpenAI Responses API).
     OpenAiResponses,
+}
+
+impl ApiKind {
+    /// The bounded `provider` label value for
+    /// `prefix_drift_detected_total`. Reuses the same vocabulary as
+    /// `observability::cache_hit_rate::provider` rather than
+    /// declaring parallel string literals here, so the two metrics'
+    /// `provider` label values can never drift apart.
+    pub fn provider_label(self) -> &'static str {
+        use crate::observability::cache_hit_rate_provider as provider;
+        match self {
+            ApiKind::Anthropic => provider::ANTHROPIC,
+            ApiKind::OpenAiChat => provider::OPENAI_CHAT,
+            ApiKind::OpenAiResponses => provider::OPENAI_RESPONSES,
+        }
+    }
 }
 
 /// Three-axis structural fingerprint of the cache hot zone.
@@ -241,8 +261,16 @@ impl std::fmt::Debug for DriftState {
 /// - Subsequent requests with all three hashes equal → no event.
 /// - Subsequent requests with any dimension differing →
 ///   `tracing::warn!(event = "cache_drift_observed", drift_dims =
-///   "<comma-joined>", previous_hash_prefix, current_hash_prefix, …)`.
-pub fn observe_drift(state: &DriftState, session_key: &str, current: StructuralHash) {
+///   "<comma-joined>", previous_hash_prefix, current_hash_prefix, …)`
+///   AND increments `prefix_drift_detected_total{provider}` (PR-E6).
+///   `provider` should be `kind.provider_label()` for the same
+///   [`ApiKind`] passed to [`compute_structural_hash`].
+pub fn observe_drift(
+    state: &DriftState,
+    session_key: &str,
+    current: StructuralHash,
+    provider: &str,
+) {
     let session_prefix = session_key_log_prefix(session_key);
     let mut cache = match state.cache.lock() {
         Ok(c) => c,
@@ -282,6 +310,7 @@ pub fn observe_drift(state: &DriftState, session_key: &str, current: StructuralH
                 current_hash_prefix = %structural_hash_log_prefix(&current),
                 "cache_drift detector observed structural change between turns of the same session"
             );
+            crate::observability::record_prefix_drift_detected(provider);
             cache.put(session_key.to_string(), current);
         }
     }
@@ -426,7 +455,7 @@ mod tests {
         let h = compute_structural_hash(&body, ApiKind::Anthropic);
         // Before observation: empty cache.
         assert_eq!(state.cache.lock().unwrap().len(), 0);
-        observe_drift(&state, "session-A", h);
+        observe_drift(&state, "session-A", h, ApiKind::Anthropic.provider_label());
         // After observation: 1 entry, equal to the input hash.
         let cache = state.cache.lock().unwrap();
         assert_eq!(cache.len(), 1);
@@ -438,9 +467,9 @@ mod tests {
         let state = make_state();
         let body = anthropic_body("sys-A", json!([]), vec!["m1"]);
         let h = compute_structural_hash(&body, ApiKind::Anthropic);
-        observe_drift(&state, "sess", h);
+        observe_drift(&state, "sess", h, ApiKind::Anthropic.provider_label());
         // Second observation with identical hash: still 1 entry, same hash.
-        observe_drift(&state, "sess", h);
+        observe_drift(&state, "sess", h, ApiKind::Anthropic.provider_label());
         let cache = state.cache.lock().unwrap();
         assert_eq!(cache.len(), 1);
         assert_eq!(cache.peek("sess"), Some(&h));
@@ -461,8 +490,8 @@ mod tests {
         assert_eq!(h1.tools, h2.tools);
         assert_eq!(h1.early_messages, h2.early_messages);
         assert_eq!(drift_dims(&h1, &h2), "system");
-        observe_drift(&state, "sess", h1);
-        observe_drift(&state, "sess", h2);
+        observe_drift(&state, "sess", h1, ApiKind::Anthropic.provider_label());
+        observe_drift(&state, "sess", h2, ApiKind::Anthropic.provider_label());
     }
 
     #[test]
@@ -518,9 +547,9 @@ mod tests {
             &anthropic_body("s", json!([]), vec!["m"]),
             ApiKind::Anthropic,
         );
-        observe_drift(&state, "s1", h);
-        observe_drift(&state, "s2", h);
-        observe_drift(&state, "s3", h);
+        observe_drift(&state, "s1", h, ApiKind::Anthropic.provider_label());
+        observe_drift(&state, "s2", h, ApiKind::Anthropic.provider_label());
+        observe_drift(&state, "s3", h, ApiKind::Anthropic.provider_label());
         let cache = state.cache.lock().unwrap();
         assert_eq!(cache.len(), 2);
         // s1 was the least-recently-used; should have been evicted.

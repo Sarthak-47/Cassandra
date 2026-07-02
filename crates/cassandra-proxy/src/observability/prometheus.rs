@@ -247,6 +247,12 @@ pub async fn handle_metrics() -> Response {
     let rl_output_gauge = super::proxy_metrics::rate_limit_remaining_output_tokens_gauge(reg);
     let tier_counter = super::proxy_metrics::service_tier_counter(reg);
     let status_counter = super::proxy_metrics::response_status_counter(reg);
+    // Phase E PR-E6 remediation: same force-zero treatment as the
+    // other counters above, so `prefix_drift_detected_total` (a
+    // "should stay near-zero" cache-safety signal, same alarm shape
+    // as `proxy_passthrough_bytes_modified_total`) is visible from
+    // boot rather than only appearing after the first real drift.
+    let drift_counter = super::proxy_metrics::prefix_drift_detected_counter(reg);
 
     const INIT_SENTINEL: &str = "__init__";
     rejected_counter
@@ -261,6 +267,7 @@ pub async fn handle_metrics() -> Response {
     rl_output_gauge.with_label_values(&[INIT_SENTINEL]).set(0);
     tier_counter.with_label_values(&[INIT_SENTINEL]).inc_by(0);
     status_counter.with_label_values(&[INIT_SENTINEL]).inc_by(0);
+    drift_counter.with_label_values(&[INIT_SENTINEL]).inc_by(0);
 
     let metric_families = registry().gather();
     let mut buffer = Vec::with_capacity(2048);
@@ -366,6 +373,70 @@ mod tests {
         assert!(
             body.contains("bedrock_invoke_latency_seconds_count"),
             "histogram count line missing: {body}"
+        );
+    }
+
+    #[test]
+    fn drift_detector_drifted_branch_increments_prefix_drift_detected_total() {
+        // PR-E6 remediation: prove the wiring, not just the counter
+        // mechanism (already covered by the other tests in this
+        // module) -- `observe_drift`'s Drifted branch must reach the
+        // real global registry's counter, not some other instance.
+        use crate::cache_stabilization::drift_detector::{
+            compute_structural_hash, observe_drift, ApiKind, DriftState,
+        };
+        use serde_json::json;
+
+        let state = DriftState::new(8);
+        let body_a = json!({
+            "model": "claude-3-5-sonnet-20241022",
+            "system": "prefix-drift-total-test-sys-A",
+            "tools": [],
+            "messages": [{"role": "user", "content": "m1"}],
+        });
+        let body_b = json!({
+            "model": "claude-3-5-sonnet-20241022",
+            "system": "prefix-drift-total-test-sys-B",
+            "tools": [],
+            "messages": [{"role": "user", "content": "m1"}],
+        });
+        let h1 = compute_structural_hash(&body_a, ApiKind::Anthropic);
+        let h2 = compute_structural_hash(&body_b, ApiKind::Anthropic);
+
+        // First request: no drift possible (nothing seen yet).
+        observe_drift(
+            &state,
+            "prefix-drift-total-test-session",
+            h1,
+            ApiKind::Anthropic.provider_label(),
+        );
+        // Second request, same hash: stable, still no drift.
+        observe_drift(
+            &state,
+            "prefix-drift-total-test-session",
+            h1,
+            ApiKind::Anthropic.provider_label(),
+        );
+
+        // Third request: genuine drift on the `system` axis.
+        observe_drift(
+            &state,
+            "prefix-drift-total-test-session",
+            h2,
+            ApiKind::Anthropic.provider_label(),
+        );
+        let body = scrape();
+        assert!(
+            body.contains("prefix_drift_detected_total"),
+            "scrape missing prefix_drift_detected_total after a genuine drift: {body}"
+        );
+        assert!(
+            body.contains("# TYPE prefix_drift_detected_total counter"),
+            "scrape missing TYPE line: {body}"
+        );
+        assert!(
+            body.contains("provider=\"anthropic\""),
+            "scrape missing provider=\"anthropic\" label: {body}"
         );
     }
 

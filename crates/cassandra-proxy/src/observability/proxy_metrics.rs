@@ -13,8 +13,8 @@ use std::sync::OnceLock;
 use prometheus::{IntCounterVec, IntGaugeVec, Opts, Registry};
 
 use super::metric_names::{
-    LABEL_PATH, LABEL_PROVIDER, LABEL_STATUS, LABEL_TIER,
-    METRIC_PROXY_PASSTHROUGH_BYTES_MODIFIED_TOTAL,
+    LABEL_PATH, LABEL_PROVIDER, LABEL_STATUS, LABEL_TIER, METRIC_PREFIX_DRIFT_DETECTED_TOTAL,
+    METRIC_PREFIX_DRIFT_DETECTED_TOTAL_HELP, METRIC_PROXY_PASSTHROUGH_BYTES_MODIFIED_TOTAL,
     METRIC_PROXY_PASSTHROUGH_BYTES_MODIFIED_TOTAL_HELP,
     METRIC_PROXY_RATE_LIMIT_REMAINING_INPUT_TOKENS,
     METRIC_PROXY_RATE_LIMIT_REMAINING_INPUT_TOKENS_HELP,
@@ -277,6 +277,47 @@ pub fn record_response_status(status: &str, reason: Option<&str>, request_id: &s
         reason = reason.unwrap_or(""),
         request_id = %request_id,
         "incremented proxy_response_status_count_total"
+    );
+}
+
+// ---------- prefix_drift_detected_total{provider} ----------
+
+/// Phase E PR-E6 remediation: the detector in
+/// `cache_stabilization::drift_detector` had real, tested detection
+/// logic since it landed but never emitted this counter (deferred at
+/// the time pending "the global Prometheus registry" -- which now
+/// exists, see the rest of this file). Provider-only label per this
+/// module's cardinality discipline (see `metric_names::
+/// METRIC_PREFIX_DRIFT_DETECTED_TOTAL_HELP` for why `model` isn't a
+/// label despite the spec naming it).
+pub fn prefix_drift_detected_counter(registry: &Registry) -> &'static IntCounterVec {
+    static COUNTER: OnceLock<IntCounterVec> = OnceLock::new();
+    COUNTER.get_or_init(|| {
+        let opts = Opts::new(
+            METRIC_PREFIX_DRIFT_DETECTED_TOTAL,
+            METRIC_PREFIX_DRIFT_DETECTED_TOTAL_HELP,
+        );
+        let counter = IntCounterVec::new(opts, &[LABEL_PROVIDER])
+            .expect("prefix_drift_detected_total descriptor is well-formed");
+        registry
+            .register(Box::new(counter.clone()))
+            .expect("prefix_drift_detected_total registers exactly once");
+        counter
+    })
+}
+
+/// Record one genuine drift event (NOT the first-request or
+/// stable-prefix cases -- those are not drift). `provider` is one of
+/// [`super::cache_hit_rate::provider`]'s bounded vocabulary.
+pub fn record_prefix_drift_detected(provider: &str) {
+    prefix_drift_detected_counter(super::prometheus::registry())
+        .with_label_values(&[provider])
+        .inc();
+    tracing::debug!(
+        event = "metric_recorded",
+        metric = METRIC_PREFIX_DRIFT_DETECTED_TOTAL,
+        provider = %provider,
+        "incremented prefix_drift_detected_total"
     );
 }
 

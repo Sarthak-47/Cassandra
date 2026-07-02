@@ -695,7 +695,12 @@ pub(crate) async fn forward_http(
             if let (Some(kind), Some(headers)) = (drift_kind, headers_snapshot.as_ref()) {
                 let session_key = derive_session_key(headers, &client_addr);
                 let hash = compute_structural_hash(&parsed, kind);
-                observe_drift(&state.drift_state, &session_key, hash);
+                observe_drift(
+                    &state.drift_state,
+                    &session_key,
+                    hash,
+                    kind.provider_label(),
+                );
             }
         }
         let outcome = match endpoint {

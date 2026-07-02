@@ -94,6 +94,19 @@ pub const METRIC_PROXY_RESPONSE_STATUS_COUNT_TOTAL_HELP: &str =
      'incomplete' detail lands in the structured log paired with each \
      increment.";
 
+// ---------- prefix_drift_detected_total ----------
+
+pub const METRIC_PREFIX_DRIFT_DETECTED_TOTAL: &str = "prefix_drift_detected_total";
+pub const METRIC_PREFIX_DRIFT_DETECTED_TOTAL_HELP: &str =
+    "Count of cache-bust drift events observed by the PR-E6 detector: the \
+     cache hot zone (system/tools/first-3-messages) SHA-256 fingerprint \
+     changed between consecutive turns of the same session. Labelled by \
+     provider only, per this module's cardinality-discipline rule (see \
+     observability::mod docs) -- the spec named a {provider, model} pair, \
+     but `model` is client-controlled request input, not infrastructure \
+     config, and an unbounded label is a cardinality-DoS vector. Per-model \
+     detail lives in the paired cache_drift_observed log line instead.";
+
 // Phase G PR-G3 remediation (C3 + C4): the metric-name constants
 // for `proxy_image_generation_call_log_redacted_total`,
 // `wrap_rtk_invocations_total`, and `wrap_rtk_tokens_saved_per_session`
