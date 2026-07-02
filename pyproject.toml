@@ -19,6 +19,9 @@ classifiers = [
 dependencies = [
     "click>=8.1",
     "opentelemetry-api>=1.20",
+    # PyPI binary wheel (ships the ast-grep CLI, no separate download step)
+    # so cassandra/binaries.py's ast-grep interceptor always has it on PATH.
+    "ast-grep-cli>=0.30",
 ]
 
 [project.urls]
@@ -33,12 +36,22 @@ cassandra = "cassandra.cli.main:main"
 proxy = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",
-    "litellm>=1.84.0",  # PYSEC-2026-388, CVE-2026-40217/47101/47102
+    # GH #956: litellm's own metadata pins requires-python <3.14, so an
+    # unmarked dependency makes `pip install cassandra-ai` unsatisfiable on
+    # 3.14. litellm is only used for model registry/pricing/non-core
+    # providers (lazily imported, ImportError-guarded elsewhere), so it's
+    # safe to skip here and degrade gracefully.
+    "litellm>=1.84.0; python_version < '3.14'",  # PYSEC-2026-388, CVE-2026-40217/47101/47102
     "httpx[http2]>=0.24",  # server.py defaults http2=True on the AsyncClient
     "mcp>=1.0",
     # Transitive deps pinned to patched floors (pip-audit, 2026-07-02):
     "aiohttp>=3.14.1",  # PYSEC-2026-237 and 10 related CVEs in <3.14.1
     "python-dotenv>=1.2.2",  # CVE-2026-28684
+    # Vector-index backend for the local memory system (cassandra/memory/
+    # factory.py `_create_vector_index`, VectorBackend.AUTO). Without one
+    # of sqlite-vec/hnswlib installed, memory_backend="local" raises
+    # ValueError during startup and /readyz stays 503 forever.
+    "sqlite-vec>=0.1",
 ]
 # ML-backed compressors (Kompress token classification, semantic relevance).
 ml = [
@@ -88,6 +101,15 @@ dev = [
     "rich>=13.0",
     "opentelemetry-sdk>=1.20",
     "anyio>=4.0",
+    # LocalBackendConfig's default embedder_backend is "local" (sentence-
+    # transformers), and many tests construct it directly (bypassing
+    # MemoryHandler's ONNX-first auto-detect). ci.yml already has a
+    # dedicated prefetch-model job + HF cache warmed for exactly this
+    # model (sentence-transformers/all-MiniLM-L6-v2, see
+    # scripts/ci/verify_hf_model_cache.py) and installs CPU-only torch
+    # ahead of the wheel — sentence-transformers itself was the missing
+    # piece tying that infrastructure to an actual working embedder.
+    "sentence-transformers>=2.2; python_version < '3.14'",
 ]
 all = [
     "cassandra-ai[proxy,ml,langchain,agno,strands,evals]",
@@ -99,6 +121,10 @@ module-name = "cassandra._core"
 python-source = "."
 features = ["pyo3/extension-module"]
 strip = true
+include = [
+    { path = "LICENSE", format = "sdist" },
+    { path = "NOTICE", format = "sdist" },
+]
 
 [tool.ruff]
 target-version = "py310"
