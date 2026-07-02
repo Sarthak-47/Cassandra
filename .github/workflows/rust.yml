@@ -73,6 +73,10 @@ jobs:
       # the extra job weight.
       - name: cargo test -- byte-faithful gate (PR-I1)
         run: cargo test -p cassandra-proxy --test integration_byte_faithful
+      # REALIGNMENT/11-phase-I-test-infra.md PR-I7: same fast-fail
+      # visibility rationale as PR-I1 above.
+      - name: cargo test -- cache hot zone gate (PR-I7)
+        run: cargo test -p cassandra-proxy --test integration_cache_hot_zone
 
   wheels:
     name: wheels (${{ matrix.target }})

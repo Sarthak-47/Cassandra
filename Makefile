@@ -1,4 +1,4 @@
-.PHONY: test-parity test-byte-faithful ci-precheck build-wheel lint fmt test test-rust test-python
+.PHONY: test-parity test-byte-faithful test-cache-hot-zone ci-precheck build-wheel lint fmt test test-rust test-python
 
 # Rust-vs-Python parity harness (crates/cassandra-parity). Compares the two
 # implementations against recorded fixtures under tests/parity/fixtures;
@@ -13,6 +13,13 @@ test-parity:
 test-byte-faithful:
 	cargo test -p cassandra-proxy --test integration_byte_faithful
 	pytest tests/test_proxy_byte_faithful_forwarding.py -k byte_equal_sha256
+
+# Cache hot zone non-mutation gate (REALIGNMENT/11-phase-I-test-infra.md
+# PR-I7) -- proves system/tools/frozen-messages/thinking-signatures/
+# opaque Responses items survive byte-identical even while live-zone
+# compression is actively shrinking the rest of the same request.
+test-cache-hot-zone:
+	cargo test -p cassandra-proxy --test integration_cache_hot_zone
 
 # Pre-push gate. Fast, local-only checks -- run this before every push to
 # main (per REALIGNMENT/INDEX.md convention). Does not run the full pytest
