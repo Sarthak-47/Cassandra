@@ -53,3 +53,7 @@ Thumbs.db
 # Local env files
 .env
 .env.local
+
+# Project-scoped memory DB default (cassandra/memory default storage path
+# when no --memory-db-path/--memory-storage-root is given)
+/.cassandra/
