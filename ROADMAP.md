@@ -226,10 +226,30 @@ proxy binary isn't what `cassandra proxy` deploys.
 
 Next real step: same spot-check treatment for E–G (only A, B, C, D have
 been read against spec so far) to know the true completion state before
-deciding anything about H. Then read
-[11-phase-I-test-infra.md](REALIGNMENT/11-phase-I-test-infra.md) to scope
-the shadow/canary testing work that actually gates H1 — that's the real
-next deliverable, not H1 itself (see the correction above for why).
+deciding anything about H.
+
+**Phase I scope, read directly from
+[11-phase-I-test-infra.md](REALIGNMENT/11-phase-I-test-infra.md)** (10
+PRs, meant to land continuously alongside other phases — none have
+landed; zero `PR-I*` markers anywhere in code):
+
+| PR | What | Risk | Blocked by | Ready now? |
+|---|---|---|---|---|
+| I1 | SHA-256 byte-faithful round-trip on real payload — "the single most important regression test for cache safety" | Low | PR-A1 | **Yes** |
+| I2 | SSE corner-case fixtures + 10K-case fuzz/proptest | Low | PR-C1 | **Yes** |
+| I3 | Property tests for compression invariants (determinism, idempotence, token-non-increasing, position/frozen-prefix preservation) | Low | PR-B4 | **Yes** |
+| I4 | Real-traffic shadow test, Python vs Rust, 10K requests, gates Phase H | Medium | PR-A1...PR-G3 (all of A–G) | No — needs G verified first |
+| I5 | Promote 3 stubbed parity comparators (`ccr`, `log_compressor`, `cache_aligner`) to real | Medium | PR-B3, PR-B7, PR-A2 | Partial — B3's CodeCompressor gap may not block this (different code path) |
+| I6 | Make `make test-parity` a per-PR CI gate (currently nightly, `continue-on-error`) | Low | PR-I5 | No |
+| I7 | Cache hot zone non-mutation tests (system/tools/frozen messages byte-equal under compression) | Low | PR-B2 | **Yes** |
+| I8 | Tool-definition byte-stability golden-file snapshots | Low | PR-B7 | **Yes** |
+| I9 | Cache-hit-rate Prometheus alarm | Low | PR-G3 | Unknown — G not yet verified |
+| I10 | Replace fake RTK shim in wrap E2E with real RTK | Low | none | **Yes** |
+
+Five PRs (I1, I2, I3, I7, I8) are low-risk, well-specified, and
+unblocked right now — genuinely good next work, in contrast to H1 which
+cannot start yet. I4 (the shadow test that actually gates H1) needs E/F/G
+verified and possibly built out first.
 
 [12-decisions-needed.md](REALIGNMENT/12-decisions-needed.md) lists 15
 decisions the plan originally called blocking for Phase A (ICM deletion
