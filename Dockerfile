@@ -38,7 +38,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       curl && \
     rm -rf /var/lib/apt/lists/* && \
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
-      | sh -s -- -y --no-modify-path --profile minimal --default-toolchain 1.95.0
+      | sh -s -- -y --no-modify-path --profile minimal -c rustfmt -c clippy --default-toolchain 1.95.0
 
 WORKDIR /build
 COPY pyproject.toml uv.lock README.md ./
