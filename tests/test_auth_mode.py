@@ -17,6 +17,7 @@ from cassandra.proxy.auth_mode import (
     AuthMode,
     classify_auth_mode,
     classify_client,
+    sanitize_accept_encoding_for_subscription,
 )
 
 
@@ -193,3 +194,48 @@ def test_classify_client_uses_default_when_no_client_signal():
     headers = {"user-agent": "anthropic/0.42.0"}
 
     assert classify_client(headers, default="claude") == "claude"
+
+
+# ── sanitize_accept_encoding_for_subscription (Phase F PR-F2 gap fix) ──
+
+
+def test_sanitize_accept_encoding_none_input_returns_none() -> None:
+    assert sanitize_accept_encoding_for_subscription(None) is None
+
+
+def test_sanitize_accept_encoding_empty_string_returns_none() -> None:
+    assert sanitize_accept_encoding_for_subscription("") is None
+
+
+def test_sanitize_accept_encoding_keeps_gzip_deflate_drops_br_zstd() -> None:
+    """A realistic client header: httpx-decodable codings survive, br/zstd don't."""
+    assert sanitize_accept_encoding_for_subscription("gzip, deflate, br, zstd") == "gzip, deflate"
+
+
+def test_sanitize_accept_encoding_all_safe_codings_pass_through_unchanged() -> None:
+    assert (
+        sanitize_accept_encoding_for_subscription("gzip, deflate, identity")
+        == "gzip, deflate, identity"
+    )
+
+
+def test_sanitize_accept_encoding_only_unsupported_codings_returns_none() -> None:
+    """A hypothetical br-only client: nothing survives, caller should drop the header."""
+    assert sanitize_accept_encoding_for_subscription("br") is None
+    assert sanitize_accept_encoding_for_subscription("br, zstd") is None
+
+
+def test_sanitize_accept_encoding_wildcard_is_not_treated_as_safe() -> None:
+    """ "*" would let the upstream pick any coding, including ones httpx can't
+    decode -- must not be treated as a safe passthrough token."""
+    assert sanitize_accept_encoding_for_subscription("*") is None
+    assert sanitize_accept_encoding_for_subscription("gzip, *") == "gzip"
+
+
+def test_sanitize_accept_encoding_ignores_quality_weights_when_matching() -> None:
+    """ "gzip;q=0.8" should still match on the "gzip" coding name."""
+    assert sanitize_accept_encoding_for_subscription("gzip;q=0.8, br;q=1.0") == "gzip;q=0.8"
+
+
+def test_sanitize_accept_encoding_case_insensitive() -> None:
+    assert sanitize_accept_encoding_for_subscription("GZIP, BR") == "GZIP"

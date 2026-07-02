@@ -278,6 +278,52 @@ def should_stamp_codex_client(path: str, headers: Mapping[str, Any] | Any) -> bo
     return classify_client(headers) is None
 
 
+# Content-codings httpx can actually decode without the optional `brotli`/
+# `zstandard` extras (neither is in pyproject.toml — see the `httpx[http2]`
+# dependency line). Every upstream-bound handler strips `accept-encoding`
+# outright for this reason: an edge proxy in front of the client (Cloudflare
+# Workers, etc.) may send "br, zstd", and if the upstream honors one of those
+# codings the response body comes back undecodable -> 502.
+_HTTPX_DECODABLE_ENCODINGS = frozenset({"identity", "gzip", "deflate"})
+
+
+def sanitize_accept_encoding_for_subscription(raw: str | None) -> str | None:
+    """Filter an inbound ``Accept-Encoding`` value to codings httpx can decode.
+
+    Phase F's Subscription-mode "stealth" requirement
+    (REALIGNMENT/08-phase-F-auth-mode.md:117) says to preserve
+    ``accept-encoding`` byte-for-byte and never strip it — a stripped or
+    obviously-proxy-shaped header is a fingerprint signal. That's in direct
+    tension with every handler's existing (and still-necessary) reason for
+    stripping it on every OTHER mode: an unsupported coding (``br``,
+    ``zstd``) causes an undecodable 502 (see the strip's own comment at each
+    call site). Dropping the header for Subscription traffic would fix the
+    502 risk but re-introduce the fingerprint; forwarding it unfiltered
+    would fix the fingerprint but reintroduce the 502.
+
+    This resolves the tension by filtering the value down to only the
+    codings httpx actually supports, preserving the header's presence (never
+    stripped) while eliminating the 502 risk. A real client's
+    ``Accept-Encoding`` almost always lists more than one coding (e.g.
+    ``"gzip, deflate, br"``), so in practice this changes nothing about
+    whether the header is present or how many codings it advertises down to
+    the ones that matter.
+
+    Returns ``None`` if nothing in ``raw`` survives the filter (e.g. a
+    hypothetical client that sends only ``"br"``) — the caller should drop
+    the header entirely in that case, since forwarding an empty value would
+    itself be the anomalous, fingerprintable shape.
+    """
+    if not raw:
+        return None
+    kept = [
+        token
+        for token in (part.strip() for part in raw.split(","))
+        if token and token.split(";", 1)[0].strip().lower() in _HTTPX_DECODABLE_ENCODINGS
+    ]
+    return ", ".join(kept) if kept else None
+
+
 __all__ = [
     "AuthMode",
     "CLIENT_UA_MAP",
@@ -285,5 +331,6 @@ __all__ = [
     "SUBSCRIPTION_UA_PREFIXES",
     "classify_auth_mode",
     "classify_client",
+    "sanitize_accept_encoding_for_subscription",
     "should_stamp_codex_client",
 ]

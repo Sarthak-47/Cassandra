@@ -51,8 +51,10 @@ from cassandra.agent_savings import proxy_pipeline_kwargs
 from cassandra.copilot_auth import apply_copilot_api_auth, build_copilot_upstream_url
 from cassandra.pipeline import PipelineStage, summarize_routing_markers
 from cassandra.proxy.auth_mode import (
+    AuthMode,
     classify_auth_mode,
     classify_client,
+    sanitize_accept_encoding_for_subscription,
     should_stamp_codex_client,
 )
 from cassandra.proxy.compression_decision import CompressionDecision
@@ -1711,7 +1713,20 @@ class OpenAIHandlerMixin(ProxyHandlerHost):
         # Strip accept-encoding so httpx negotiates its own encoding.
         # Cloudflare Workers forward "br, zstd" which OpenAI may honor;
         # if httpx lacks brotli support the response body is undecipherable → 502.
-        headers.pop("accept-encoding", None)
+        # Phase F PR-F2 (REALIGNMENT/08-phase-F-auth-mode.md:117):
+        # Subscription mode must never strip accept-encoding outright
+        # (stealth) — filter to codings httpx can decode instead, so the
+        # header survives without reintroducing the 502 above.
+        if auth_mode == AuthMode.SUBSCRIPTION:
+            _safe_accept_encoding = sanitize_accept_encoding_for_subscription(
+                headers.get("accept-encoding")
+            )
+            if _safe_accept_encoding:
+                headers["accept-encoding"] = _safe_accept_encoding
+            else:
+                headers.pop("accept-encoding", None)
+        else:
+            headers.pop("accept-encoding", None)
         tags = extract_tags(headers)
         client = classify_client(headers)
         # Surface the image-compression decision (computed earlier) into
@@ -2962,7 +2977,20 @@ class OpenAIHandlerMixin(ProxyHandlerHost):
         # Strip accept-encoding so httpx negotiates its own encoding.
         # Cloudflare Workers forward "br, zstd" which OpenAI may honor;
         # if httpx lacks brotli support the response body is undecipherable → 502.
-        headers.pop("accept-encoding", None)
+        # Phase F PR-F2 (REALIGNMENT/08-phase-F-auth-mode.md:117):
+        # Subscription mode must never strip accept-encoding outright
+        # (stealth) — filter to codings httpx can decode instead, so the
+        # header survives without reintroducing the 502 above.
+        if auth_mode == AuthMode.SUBSCRIPTION:
+            _safe_accept_encoding = sanitize_accept_encoding_for_subscription(
+                headers.get("accept-encoding")
+            )
+            if _safe_accept_encoding:
+                headers["accept-encoding"] = _safe_accept_encoding
+            else:
+                headers.pop("accept-encoding", None)
+        else:
+            headers.pop("accept-encoding", None)
         tags = extract_tags(headers)
         client = classify_client(headers)
         # PR-A5 (P5-49): strip internal x-cassandra-* from upstream-bound

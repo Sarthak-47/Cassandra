@@ -30,7 +30,12 @@ import httpx
 from cassandra.agent_savings import proxy_pipeline_kwargs
 from cassandra.copilot_auth import build_copilot_upstream_url
 from cassandra.pipeline import PipelineStage, summarize_routing_markers
-from cassandra.proxy.auth_mode import classify_auth_mode, classify_client
+from cassandra.proxy.auth_mode import (
+    AuthMode,
+    classify_auth_mode,
+    classify_client,
+    sanitize_accept_encoding_for_subscription,
+)
 from cassandra.proxy.compression_decision import CompressionDecision
 from cassandra.proxy.forwarded_headers import resolve_client_ip
 from cassandra.proxy.handlers._debug_dump import _debug_dump_mode, _redact_debug_value
@@ -681,7 +686,20 @@ class AnthropicHandlerMixin(ProxyHandlerHost):
             # Edge proxies (Cloudflare Workers, etc.) may forward "br, zstd" which
             # the upstream can honor; if httpx lacks brotli support the response
             # body is undecipherable → 502.
-            headers.pop("accept-encoding", None)
+            # Phase F PR-F2 (REALIGNMENT/08-phase-F-auth-mode.md:117):
+            # Subscription mode must never strip accept-encoding outright
+            # (stealth) — filter to codings httpx can decode instead, so the
+            # header survives without reintroducing the 502 above.
+            if auth_mode == AuthMode.SUBSCRIPTION:
+                _safe_accept_encoding = sanitize_accept_encoding_for_subscription(
+                    headers.get("accept-encoding")
+                )
+                if _safe_accept_encoding:
+                    headers["accept-encoding"] = _safe_accept_encoding
+                else:
+                    headers.pop("accept-encoding", None)
+            else:
+                headers.pop("accept-encoding", None)
             tags = extract_tags(headers)
             # Identify the harness (codex / claude-code / aider / etc.)
             # from User-Agent or X-Client. Surfaced via the funnel into
