@@ -1,4 +1,4 @@
-.PHONY: test-parity test-byte-faithful test-cache-hot-zone ci-precheck build-wheel lint fmt test test-rust test-python
+.PHONY: test-parity test-byte-faithful test-cache-hot-zone test-tool-def-stability ci-precheck build-wheel lint fmt test test-rust test-python
 
 # Rust-vs-Python parity harness (crates/cassandra-parity). Compares the two
 # implementations against recorded fixtures under tests/parity/fixtures;
@@ -20,6 +20,17 @@ test-byte-faithful:
 # compression is actively shrinking the rest of the same request.
 test-cache-hot-zone:
 	cargo test -p cassandra-proxy --test integration_cache_hot_zone
+
+# Tool-definition byte-stability golden-file gate
+# (REALIGNMENT/11-phase-I-test-infra.md PR-I8) -- pins the canonical
+# bytes of every auto-injected tool definition (cassandra_retrieve,
+# memory_save, memory_search) so a schema-shape or wording change fails
+# CI loudly instead of silently busting every active session's prompt
+# cache. Python-owned for now (see the module docstring in
+# tests/test_tool_def_byte_stability.py for why this isn't a Rust
+# test); revisit once Phase H ports tool-definition construction there.
+test-tool-def-stability:
+	pytest tests/test_tool_def_byte_stability.py
 
 # Pre-push gate. Fast, local-only checks -- run this before every push to
 # main (per REALIGNMENT/INDEX.md convention). Does not run the full pytest
