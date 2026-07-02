@@ -325,7 +325,7 @@ landed; zero `PR-I*` markers anywhere in code):
 |---|---|---|---|---|
 | I1 | SHA-256 byte-faithful round-trip on real payload — "the single most important regression test for cache safety" | Low | PR-A1 | **Done** (2026-07-02) |
 | I2 | SSE corner-case fixtures + 10K-case fuzz/proptest | Low | PR-C1 | **Yes** |
-| I3 | Property tests for compression invariants (determinism, idempotence, token-non-increasing, position/frozen-prefix preservation) | Low | PR-B4 | **Yes** |
+| I3 | Property tests for compression invariants (determinism, idempotence, token-non-increasing, position/frozen-prefix preservation) | Low | PR-B4 | **Done** (2026-07-02) |
 | I4 | Real-traffic shadow test, Python vs Rust, 10K requests, gates Phase H | Medium | PR-A1...PR-G3 (all of A–G) | No — needs G verified first |
 | I5 | Promote 3 stubbed parity comparators (`ccr`, `log_compressor`, `cache_aligner`) to real | Medium | PR-B3, PR-B7, PR-A2 | Partial — B3's CodeCompressor gap may not block this (different code path) |
 | I6 | Make `make test-parity` a per-PR CI gate (currently nightly, `continue-on-error`) | Low | PR-I5 | No |
@@ -385,13 +385,29 @@ thin golden-file re-verifications for it plus two net-new tests for
 coverage. Golden files under `tests/golden/tool_defs/` generated
 programmatically from real output, not hand-transcribed.
 
-Remaining unblocked, low-risk Phase I work: **I2, I3** (SSE fuzz
-fixtures, compression-invariant property tests) and **I9** (cache-hit-
-rate Prometheus alarm — confirmed unblocked once G was verified). I4
-(the shadow test that actually gates H1) is likely realistic to attempt
-now that Phase F's fingerprint-surface gaps (raw OAuth token storage,
-unconditional X-Forwarded-*) are fixed — it was specifically those gaps
-that made an OAuth/Subscription-safety shadow test premature before.
+**PR-I3 landed (2026-07-02)**, verified green in real CI. Added
+`crates/cassandra-core/tests/proptest_compression.rs` (all 5 spec-named
+invariants — determinism, idempotence, token-non-increasing, position
+preservation, frozen-prefix integrity — against a generator producing
+valid Anthropic request bodies weighted toward occasionally clearing
+the live-zone compression threshold, so the properties get exercised
+against genuine compression, not just no-ops) and
+`crates/cassandra-core/tests/proptest_ccr.rs` (the CCR store round-trip
+property, scoped correctly: CCR stores original content by hash for
+later retrieval rather than compressing wire bytes itself, so the real
+property is `get(put(content).hash) == Some(content)`, not a literal
+`decompress(compress(x))`). All 9 property tests pass across 1000
+generated cases each — a genuine, positive signal about the actual
+correctness of the live-zone dispatcher, not just documentation of
+intent.
+
+Remaining unblocked, low-risk Phase I work: **I2** (SSE fuzz fixtures)
+and **I9** (cache-hit-rate Prometheus alarm — confirmed unblocked once
+G was verified). I4 (the shadow test that actually gates H1) is likely
+realistic to attempt now that Phase F's fingerprint-surface gaps (raw
+OAuth token storage, unconditional X-Forwarded-*) are fixed — it was
+specifically those gaps that made an OAuth/Subscription-safety shadow
+test premature before.
 
 [12-decisions-needed.md](REALIGNMENT/12-decisions-needed.md) lists 15
 decisions the plan originally called blocking for Phase A (ICM deletion
