@@ -170,7 +170,7 @@ Full detail in [REALIGNMENT/](REALIGNMENT/INDEX.md).
 | B — Live-zone engine | Delete ~10K LOC (ICM/scoring/relevance), rebuild compression | **Verified** mostly done, 2 real gaps (relevance/ not deleted, CodeCompressor unwired — see below) |
 | C — Rust proxy paths | Port remaining handlers, byte-level SSE parser | **Verified** well-built but not actually deployed (see critical finding above) + 1 dropped feature |
 | D — Bedrock/Vertex native | Replace the currently-fake LiteLLM conversion | **Verified** genuinely native (SigV4/EventStream/ADC, real, not a LiteLLM shim) |
-| E — Cache stabilization | Deterministic tool/schema ordering | **Verified** mostly solid, 2/6 have smaller acceptance-criteria gaps (E5 + E6 fixed 2026-07-02, see below) |
+| E — Cache stabilization | Deterministic tool/schema ordering | **Verified** mostly solid, 1/6 has a smaller acceptance-criteria gap (E2, E5, E6 fixed 2026-07-02, see below) |
 | F — Auth-mode policy | PAYG/OAuth/subscription-aware compression | **Verified**, all confirmed fingerprint-surface gaps (F3, F4, accept-encoding) fixed (2026-07-02) — see below |
 | G — RTK + observability | Broader wrap-CLI support, metrics | **Verified** strongest phase audited, 1 minor gap; unblocks Phase I PR-I9 |
 | H — Python retirement | Delete the Python proxy once Rust hits parity | Mostly not started (1/4 — only PR-H2); PR-H1 is a HIGH-RISK -15K LOC deletion, not startable yet (see below) |
@@ -232,10 +232,22 @@ comments (`crates/cassandra-py/src/lib.rs:1560-1569`), since the Rust
 proxy binary isn't what `cassandra proxy` deploys.
 
 **Phase E spot-check result:** substantially real work, no dead-code
-stubs, genuine wiring into the hot path — but 4 of 6 PRs fall short of
+stubs, genuine wiring into the hot path — but 4 of 6 PRs fell short of
 their own acceptance criteria in ways worth knowing about, not
-blockers: **E2** (schema key sort) is missing its required snapshot
-test on a real production tool schema. **E3** (Anthropic `cache_control`
+blockers: **E2's missing snapshot test is fixed (2026-07-02).** Added
+`snapshot_real_production_schema_memory_save` to
+`crates/cassandra-proxy/src/cache_stabilization/tool_def_normalize.rs`,
+sourcing the real `memory_save` tool's `input_schema` from the same
+golden file PR-I8 already pinned
+(`tests/golden/tool_defs/memory_save_anthropic.json`) via
+`include_str!`, so the two can't silently drift apart. Exercises real
+structure the prior synthetic-only tests didn't: multiple sibling
+properties genuinely out of alphabetic order, array-of-objects
+properties whose nested `properties` also need recursive sorting, and
+two `required` arrays whose element order must survive untouched even
+though a sibling `properties` object gets reordered. Verified green
+on real CI (`rust.yml`'s `test (ubuntu)` job and the full `ci.yml`
+suite). **E3** (Anthropic `cache_control`
 auto-placement) ships exactly 1 marker (last tool only) instead of the
 spec's 4 (system/tools/history-boundary/latest-user) — a deliberate,
 well-documented first-ship scope cut pending telemetry, not a bug.
