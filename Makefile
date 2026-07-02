@@ -1,4 +1,4 @@
-.PHONY: test-parity test-byte-faithful test-cache-hot-zone test-tool-def-stability ci-precheck build-wheel lint fmt test test-rust test-python
+.PHONY: test-parity test-byte-faithful test-cache-hot-zone test-tool-def-stability test-sse-fixtures ci-precheck build-wheel lint fmt test test-rust test-python
 
 # Rust-vs-Python parity harness (crates/cassandra-parity). Compares the two
 # implementations against recorded fixtures under tests/parity/fixtures;
@@ -31,6 +31,16 @@ test-cache-hot-zone:
 # test); revisit once Phase H ports tool-definition construction there.
 test-tool-def-stability:
 	pytest tests/test_tool_def_byte_stability.py
+
+# SSE parser corner-case + fuzz gate (REALIGNMENT/11-phase-I-test-infra.md
+# PR-I2) -- fixture-driven assertions for out-of-order block completion,
+# mid-stream ping/error events, split-UTF-8-across-chunks, OpenAI's
+# positionless tool_calls accumulation, a TCP-drop-before-terminal-event
+# stream, and a 10K-case property test proving the framer never panics on
+# arbitrary bytes.
+test-sse-fixtures:
+	cargo test -p cassandra-proxy --test integration_sse_fixtures
+	cargo test -p cassandra-proxy --test proptest_sse
 
 # Pre-push gate. Fast, local-only checks -- run this before every push to
 # main (per REALIGNMENT/INDEX.md convention). Does not run the full pytest

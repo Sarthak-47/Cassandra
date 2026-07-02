@@ -77,6 +77,16 @@ jobs:
       # visibility rationale as PR-I1 above.
       - name: cargo test -- cache hot zone gate (PR-I7)
         run: cargo test -p cassandra-proxy --test integration_cache_hot_zone
+      # REALIGNMENT/11-phase-I-test-infra.md PR-I2: same fast-fail
+      # visibility rationale as PR-I1/PR-I7 above. Fixture-driven
+      # corner-case assertions (out-of-order blocks, mid-stream
+      # ping/error, split-UTF-8-across-chunks, OpenAI positionless
+      # tool_calls, TCP-drop-before-terminal-event) plus the 10K-case
+      # no-panic property test over arbitrary bytes.
+      - name: cargo test -- SSE fixtures + fuzz gate (PR-I2)
+        run: |
+          cargo test -p cassandra-proxy --test integration_sse_fixtures
+          cargo test -p cassandra-proxy --test proptest_sse
 
   wheels:
     name: wheels (${{ matrix.target }})
