@@ -174,7 +174,7 @@ Full detail in [REALIGNMENT/](REALIGNMENT/INDEX.md).
 | F — Auth-mode policy | PAYG/OAuth/subscription-aware compression | **Verified**, both confirmed security gaps (F3, F4) fixed (2026-07-02) — 1 unassigned accept-encoding item remains, see below |
 | G — RTK + observability | Broader wrap-CLI support, metrics | **Verified** strongest phase audited, 1 minor gap; unblocks Phase I PR-I9 |
 | H — Python retirement | Delete the Python proxy once Rust hits parity | Mostly not started (1/4 — only PR-H2); PR-H1 is a HIGH-RISK -15K LOC deletion, not startable yet (see below) |
-| I — Test infra | SHA-256 round-trip tests, parity gates | 1/10 landed (PR-I10, verified green in real CI); 5 more unblocked (see below) |
+| I — Test infra | SHA-256 round-trip tests, parity gates | 7/10 landed (I1, I2, I3, I7, I8, I9, I10 — all verified green in real CI); I5/I6 blocked on B3's CodeCompressor gap, I4 needs Phase A-G fully verified first (see below) |
 
 **Phase A spot-check result (2026-07-02):** all 8 PR-A markers verified
 against actual code, not just grep — read the real implementation of
@@ -324,7 +324,7 @@ landed; zero `PR-I*` markers anywhere in code):
 | PR | What | Risk | Blocked by | Ready now? |
 |---|---|---|---|---|
 | I1 | SHA-256 byte-faithful round-trip on real payload — "the single most important regression test for cache safety" | Low | PR-A1 | **Done** (2026-07-02) |
-| I2 | SSE corner-case fixtures + 10K-case fuzz/proptest | Low | PR-C1 | **Yes** |
+| I2 | SSE corner-case fixtures + 10K-case fuzz/proptest | Low | PR-C1 | **Done** (2026-07-02) |
 | I3 | Property tests for compression invariants (determinism, idempotence, token-non-increasing, position/frozen-prefix preservation) | Low | PR-B4 | **Done** (2026-07-02) |
 | I4 | Real-traffic shadow test, Python vs Rust, 10K requests, gates Phase H | Medium | PR-A1...PR-G3 (all of A–G) | No — needs G verified first |
 | I5 | Promote 3 stubbed parity comparators (`ccr`, `log_compressor`, `cache_aligner`) to real | Medium | PR-B3, PR-B7, PR-A2 | Partial — B3's CodeCompressor gap may not block this (different code path) |
@@ -400,6 +400,25 @@ property is `get(put(content).hash) == Some(content)`, not a literal
 generated cases each — a genuine, positive signal about the actual
 correctness of the live-zone dispatcher, not just documentation of
 intent.
+
+**PR-I2 landed (2026-07-02)**, verified green in real CI (`rust.yml`'s
+`test (ubuntu)` job, new `cargo test -- SSE fixtures + fuzz gate (PR-I2)`
+step). Two halves: `crates/cassandra-proxy/tests/proptest_sse.rs` (the
+10K-case no-panic property test the spec asks for, run against both a
+single-shot push and an arbitrarily-chunked push to directly exercise
+the framer's split-UTF-8-across-TCP-chunks contract) and
+`crates/cassandra-proxy/tests/integration_sse_fixtures.rs` consuming 10
+hand-written fixtures under `tests/fixtures/sse/` — each pinning one
+previously-buggy wire-format corner case named in the sse module docs
+(P1-8/9/14/15/17, P4-48): out-of-order block/item completion keyed by
+index or id, thinking+signature accumulation, mid-stream ping/error
+handling, OpenAI's id-only-on-first-chunk tool_call accumulation, a
+TCP-drop-before-terminal-event stream (documents that `status` stays
+`Open` — the proxy layer must detect the dropped connection itself,
+the state machine can't), and a pre-stream 429 returned as
+`application/json` (documents that callers must branch on Content-Type
+before handing bytes to the SSE framer, not rely on it to sniff
+non-SSE input). Added `make test-sse-fixtures`.
 
 **PR-I9 landed (2026-07-02)**, verified green in real CI — and not just
 a local YAML parse: added a new `promtool-check` job to `ci.yml`
