@@ -66,8 +66,16 @@ RUN pip install --no-cache-dir "$(ls /tmp/wheels/cassandra_ai-*.whl)[proxy]" && 
 
 WORKDIR /workspace
 EXPOSE 8787
-ENTRYPOINT ["cassandra"]
-CMD ["proxy", "--host", "0.0.0.0", "--port", "8787"]
+# ENTRYPOINT bakes in the `proxy` subcommand -- cassandra/install/runtime.py's
+# Docker-native orchestrator appends ONLY proxy flags (--host, --port, ...)
+# after the image name, not "proxy" itself, expecting the entrypoint to
+# already resolve to `cassandra proxy` (see the comment at that call site,
+# issue #833: an appended "proxy" would double up as `cassandra proxy
+# cassandra proxy ...` and Click aborts on the extra arguments). CMD is only
+# the default when no override args are given (e.g. `docker run <image>`
+# with nothing else).
+ENTRYPOINT ["cassandra", "proxy"]
+CMD ["--host", "0.0.0.0", "--port", "8787"]
 
 # ─── Stage: runtime-slim-base ────────────────────────────────────────
 # Minimal apt layer: just what TLS/cert validation needs.
