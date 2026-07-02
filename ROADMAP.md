@@ -14,23 +14,30 @@ higher-level view across infra, governance, releases, and product.
 Same root cause across all of these: config files CI assumes exist but were
 never committed to the repo. Small, mechanical fixes once picked up.
 
-- [ ] **No root `Dockerfile`.** `docker-native-e2e` fails with "Dockerfile
-      not found." This is the main published image
-      (`ghcr.io/Sarthak-47/cassandra`) that the Docker-native install docs
-      point users at — it has never actually been built.
-- [ ] **No `docker-bake.hcl`.** The `Docker` release workflow expects bake
-      targets (`runtime`, `runtime-nonroot`, `runtime-code`,
-      `runtime-code-nonroot`, `runtime-slim`, `runtime-slim-nonroot`,
-      `runtime-code-slim`). Bigger lift than the root Dockerfile — needs
-      real design decisions about what goes in "code" vs "slim" variants.
-- [ ] **No `.release-please-config.json` / `.release-please-manifest.json`.**
-      The `Release Please` workflow (auto version-bump PRs from
-      conventional commits) fails: "Missing required manifest config."
-- [ ] **`main` has no branch protection.** Anyone can force-push directly.
-      At minimum, require the `CI` check to pass before merge once this is
-      a project other people touch.
+**All 10 top-level workflows on `main` are green as of 2026-07-02** (CI,
+Docker, Security, Release Please, Dev Containers, Init/Wrap/Install E2E ×
+native and Docker variants). Nothing outstanding in this section right now.
 
 ### Done (2026-07-02)
+- [x] Root `Dockerfile` + `docker-bake.hcl` — 8-variant matrix
+      (runtime/runtime-nonroot/-code/-code-nonroot/-slim/-slim-nonroot/
+      -code-slim/-code-slim-nonroot), all built and pushed successfully.
+- [x] `.release-please-config.json` / `.release-please-manifest.json` —
+      root package now declares `release-type: python`, `package-name`,
+      and `extra-files` for the two npm package.json's that must stay in
+      lockstep.
+- [x] Branch protection on `main` requiring the `CI` check.
+- [x] `ast-grep-cli`, `sqlite-vec`, `sentence-transformers` declared as
+      real dependencies (their absence was silently masked by other bugs
+      until the full test suite was run end-to-end — see below).
+- [x] `litellm` and `sentence-transformers` deps carry a
+      `python_version < '3.14'` marker (GH #956) so `pip install
+      cassandra-ai` stays satisfiable on 3.14.
+- [x] `test` job in `ci.yml` now sets up a Rust toolchain — several
+      `test_release_workflows.py` assertions shell out to `cargo tree`
+      and silently failed without one.
+- [x] LICENSE/NOTICE listed in `[tool.maturin].include` for sdist format
+      (PEP 639 auto-discovery requires this or PyPI rejects the upload).
 - [x] Root `Cargo.toml` workspace + `pyproject.toml` — fixed `build` /
       `build-wheel` CI jobs (maturin: "could not find Cargo.toml").
 - [x] `rust-toolchain.toml`, `README.md`, `LICENSE`, `uv.lock` — all
@@ -56,7 +63,8 @@ never committed to the repo. Small, mechanical fixes once picked up.
 
 - The `litellm` CVE fix (bumped floor to `>=1.84.0`) only covers Python
   3.10–3.13 — litellm's patched releases don't support Python 3.14 yet.
-  Nothing to do here until litellm ships 3.14 support upstream.
+  Marked with `python_version < '3.14'` so installs stay satisfiable;
+  nothing further to do until litellm ships 3.14 support upstream.
 - `[ml]` extras (torch/transformers/sentence-transformers) were never
   pip-audited — the full install was too heavy to complete in one session.
   Worth a follow-up audit pass.
@@ -65,14 +73,9 @@ never committed to the repo. Small, mechanical fixes once picked up.
 
 ---
 
-## 3. Governance docs that don't exist
+## 3. Governance docs
 
-- [ ] `CONTRIBUTING.md` — `.github/copilot-instructions.md` explicitly
-      tells PR reviewers to treat it as "required policy," but it doesn't
-      exist yet, so that instruction currently points at nothing.
-- [ ] `CODE_OF_CONDUCT.md`
-- [ ] `SECURITY.md` — matters more than usual here since this project is a
-      proxy that handles API keys and provider credentials.
+- [x] `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md` — all added.
 
 ---
 
@@ -97,29 +100,48 @@ Actions, pip, cargo, npm) is a one-command restore from history.
 
 ---
 
-## 6. The compression-engine rewrite (REALIGNMENT) — 0% started
+## 6. The compression-engine rewrite (REALIGNMENT) — ~76% implemented
 
-Full detail in [REALIGNMENT/](REALIGNMENT/INDEX.md). This is the reason a
-lot of what's in section 1 existed to fix in the first place — the plan
-was written against a codebase that had already drifted from it.
-Confirmed via `git log`: **zero `realign-*` commits exist anywhere.**
+**Correction (2026-07-02):** the original "0% started" claim below was
+wrong. It was based only on the absence of `realign-*` git branches/commits,
+not on what the code actually contains. Grepping the tracked `PR-<phase><n>`
+markers that REALIGNMENT's own docs use to label each unit of work against
+what's actually referenced in `crates/` and `cassandra/` source comments:
+**39 of the 51 planned PRs have a corresponding implementation marker in
+code.** Phases A–G are each fully represented (every `PR-A*`...`PR-G*` ID
+shows up somewhere in source); the gap is almost entirely Phase H (Python
+proxy retirement — only `PR-H2` found, `H1/H3/H4` missing) and Phase I
+(test-infra tagging — zero `PR-I*` markers found in `tests/`, though the
+~7,700-test suite that exists suggests real test infra just isn't tagged
+with these IDs, or Phase I was never formally kicked off as its own effort).
+
+Full detail in [REALIGNMENT/](REALIGNMENT/INDEX.md).
 
 | Phase | What | Status |
 |---|---|---|
-| A — Lockdown | Stop the cache-busting bugs (passthrough on `/v1/messages`) | Not started |
-| B — Live-zone engine | Delete ~10K LOC (ICM/scoring/relevance), rebuild compression | Not started |
-| C — Rust proxy paths | Port remaining handlers, byte-level SSE parser | Not started |
-| D — Bedrock/Vertex native | Replace the currently-fake LiteLLM conversion | Not started |
-| E — Cache stabilization | Deterministic tool/schema ordering | Not started |
-| F — Auth-mode policy | PAYG/OAuth/subscription-aware compression | Not started |
-| G — RTK + observability | Broader wrap-CLI support, metrics | Not started |
-| H — Python retirement | Delete the Python proxy once Rust hits parity | Not started |
-| I — Test infra | SHA-256 round-trip tests, parity gates | Not started |
+| A — Lockdown | Stop the cache-busting bugs (passthrough on `/v1/messages`) | Implemented (8/8 PR markers found) |
+| B — Live-zone engine | Delete ~10K LOC (ICM/scoring/relevance), rebuild compression | Implemented (7/7) |
+| C — Rust proxy paths | Port remaining handlers, byte-level SSE parser | Implemented (5/5) |
+| D — Bedrock/Vertex native | Replace the currently-fake LiteLLM conversion | Implemented (5/5) |
+| E — Cache stabilization | Deterministic tool/schema ordering | Implemented (6/6) |
+| F — Auth-mode policy | PAYG/OAuth/subscription-aware compression | Implemented (4/4) |
+| G — RTK + observability | Broader wrap-CLI support, metrics | Implemented (3/3) |
+| H — Python retirement | Delete the Python proxy once Rust hits parity | Mostly not started (1/4 — only PR-H2) |
+| I — Test infra | SHA-256 round-trip tests, parity gates | Untagged / unclear (0/10 markers, but tests/ has ~7,700 tests) |
 
-Blocking Phase A: **15 unresolved decisions** in
-[12-decisions-needed.md](REALIGNMENT/12-decisions-needed.md) — ICM
-deletion scope, container strategy, the `CASSANDRA_PROXY_BACKEND` cutover
-switch, etc. Nobody's signed off on any of them yet.
+Next real step: audit whether the Python proxy (`cassandra/proxy/`, ~19K
+LOC) can actually be retired now that A–G claim completion, or whether
+those PR markers overstate how done each phase really is (markers confirm
+a PR *landed*, not that it fully satisfies the phase's spec — worth
+spot-checking a few against [REALIGNMENT/](REALIGNMENT/INDEX.md) before
+trusting this table blindly).
+
+[12-decisions-needed.md](REALIGNMENT/12-decisions-needed.md) lists 15
+decisions the plan originally called blocking for Phase A (ICM deletion
+scope, container strategy, the `CASSANDRA_PROXY_BACKEND` cutover switch,
+etc.). Given Phase A's PR markers are all present in code, these were
+presumably resolved along the way — not independently re-verified here,
+worth a quick pass to confirm the doc itself got updated to match.
 
 ---
 
@@ -145,14 +167,12 @@ Ideas discussed, nothing built yet:
 
 ## Suggested sequencing
 
-1. **Section 1 + 3** (infra + governance docs) — small, mechanical, hours
-   not days. Low risk, do these whenever.
-2. **Section 6** (REALIGNMENT) — the real project. Weeks of work, and it's
-   what determines whether the compression engine is actually correct.
-   Start by resolving the 15 open decisions, then Phase A.
+1. **Section 1 + 3** (infra + governance docs) — done.
+2. **Section 6** (REALIGNMENT) — mostly implemented already (A–G). Next:
+   spot-check that the PR markers reflect genuinely complete work, then
+   tackle Phase H (Python proxy retirement, ~19K LOC) and formalize
+   Phase I (test-infra tagging).
 3. **Section 7** (product features) — what makes this yours rather than a
-   fixed-up fork. Can run in parallel with REALIGNMENT once Phase A lands
-   (don't build new compressors on top of the architecture that's about to
-   be deleted in Phase B).
+   fixed-up fork. Safe to build now that A–G's architecture looks settled.
 4. **Section 4** (release readiness) — a 5-minute check you should do
    yourself before the first real publish.
