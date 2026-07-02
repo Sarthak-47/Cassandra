@@ -168,7 +168,7 @@ Full detail in [REALIGNMENT/](REALIGNMENT/INDEX.md).
 |---|---|---|
 | A — Lockdown | Stop the cache-busting bugs (passthrough on `/v1/messages`) | **Verified** genuinely done (all 8, one spec-stale note — see below) |
 | B — Live-zone engine | Delete ~10K LOC (ICM/scoring/relevance), rebuild compression | **Verified** mostly done, 2 real gaps (relevance/ not deleted, CodeCompressor unwired — see below) |
-| C — Rust proxy paths | Port remaining handlers, byte-level SSE parser | **Verified** well-built but not actually deployed (see critical finding above) + 1 dropped feature |
+| C — Rust proxy paths | Port remaining handlers, byte-level SSE parser | **Verified** well-built but not actually deployed (see critical finding above) — Conversations-API-awareness gap fixed 2026-07-02 |
 | D — Bedrock/Vertex native | Replace the currently-fake LiteLLM conversion | **Verified** genuinely native (SigV4/EventStream/ADC, real, not a LiteLLM shim) |
 | E — Cache stabilization | Deterministic tool/schema ordering | **Verified** mostly solid, 1/6 has a smaller acceptance-criteria gap (E2, E5, E6 fixed 2026-07-02, see below) |
 | F — Auth-mode policy | PAYG/OAuth/subscription-aware compression | **Verified, fully closed** — every gap found (F2 accept-encoding, F3 raw token + TOIN keying, F4) fixed (2026-07-02) — see below |
@@ -219,13 +219,22 @@ cut, not a stub.
 
 **Phase C spot-check result:** C1–C3 are solid (byte-level SSE parser,
 `/v1/chat/completions`, and an unusually thorough `/v1/responses` item-type
-handler in Rust). Two real gaps: (1) **PR-C4** dropped the
-Conversations-API-awareness compression-skip feature entirely —
-`crates/cassandra-proxy/src/conversations.rs` (detecting `conversation:
-{"id": ...}` in `/v1/responses` bodies and skipping live-zone
-compression) doesn't exist anywhere, no trace in code or tests; what
-exists instead (`handlers/conversations.rs`) is an unrelated
-`/v1/conversations*` CRUD passthrough. (2) **PR-C5**'s headline claim —
+handler in Rust). Two real gaps found; one fixed: **(1) PR-C4's
+Conversations-API-awareness gap is fixed (2026-07-02).** Added
+`crates/cassandra-proxy/src/conversations.rs` (a pure
+`conversation_id()` detector — what existed under a similar name,
+`handlers/conversations.rs`, is the unrelated `/v1/conversations*`
+CRUD passthrough). Wired into `live_zone_responses.rs` *before* the
+`has_array_field` gate (a Conversations API request may legitimately
+omit `input`/`messages` entirely), logging the spec-required INFO
+`compression_decision` event with the real `conversation_id` and
+incrementing a new unlabelled `proxy_conversations_api_request_count_total`
+counter, then returning `Outcome::Passthrough` — the existing
+byte-length cache-safety alarm covers non-mutation for free. New test
+landed in the existing `tests/integration_conversations.rs` (reusing
+its helpers) proves a 4096-byte `function_call_output` survives
+uncompressed. Verified green on real CI (`rust.yml`'s `test (ubuntu)`
+job and the full `ci.yml` suite). **(2) PR-C5**'s headline claim —
 "after this PR lands, no Python code is on the `/v1/responses` request
 path" — is the critical finding above: falsified by the codebase's own
 comments (`crates/cassandra-py/src/lib.rs:1560-1569`), since the Rust
