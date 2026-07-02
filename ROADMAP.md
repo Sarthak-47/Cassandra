@@ -170,7 +170,7 @@ Full detail in [REALIGNMENT/](REALIGNMENT/INDEX.md).
 | B — Live-zone engine | Delete ~10K LOC (ICM/scoring/relevance), rebuild compression | **Verified** mostly done, 2 real gaps (relevance/ not deleted, CodeCompressor unwired — see below) |
 | C — Rust proxy paths | Port remaining handlers, byte-level SSE parser | **Verified** well-built but not actually deployed (see critical finding above) + 1 dropped feature |
 | D — Bedrock/Vertex native | Replace the currently-fake LiteLLM conversion | **Verified** genuinely native (SigV4/EventStream/ADC, real, not a LiteLLM shim) |
-| E — Cache stabilization | Deterministic tool/schema ordering | **Verified** mostly solid, 3/6 have smaller acceptance-criteria gaps (E5 fixed 2026-07-02, see below) |
+| E — Cache stabilization | Deterministic tool/schema ordering | **Verified** mostly solid, 2/6 have smaller acceptance-criteria gaps (E5 + E6 fixed 2026-07-02, see below) |
 | F — Auth-mode policy | PAYG/OAuth/subscription-aware compression | **Verified**, all confirmed fingerprint-surface gaps (F3, F4, accept-encoding) fixed (2026-07-02) — see below |
 | G — RTK + observability | Broader wrap-CLI support, metrics | **Verified** strongest phase audited, 1 minor gap; unblocks Phase I PR-I9 |
 | H — Python retirement | Delete the Python proxy once Rust hits parity | Mostly not started (1/4 — only PR-H2); PR-H1 is a HIGH-RISK -15K LOC deletion, not startable yet (see below) |
@@ -250,9 +250,19 @@ detected. 6 new unit tests (JWT detection + false-positive rejection,
 sha1/sha256-length build-hash detection, sub-32-char and
 hyphenated-non-v4-UUID false-positive guards); verified green on real
 CI (`rust.yml`'s `test (ubuntu)` job and the full `ci.yml` suite).
-**E6** (cache-bust drift telemetry) has the real detection logic wired
-in but the spec'd `prefix_drift_detected_total` Prometheus counter
-doesn't exist — only a log line fires.
+**E6's missing counter is fixed (2026-07-02).** Wired
+`prefix_drift_detected_total` (real detection logic had existed since
+E6 landed; only the counter emission was missing). Deliberately
+provider-only, not the spec's literal `{provider, model}` — `model`
+is client-controlled input and this crate's own stated cardinality
+discipline (`observability::mod` docs: "every label is bounded by
+infrastructure config, NOT by request input") already rules out
+raw-input labels elsewhere (`service_tier`/`response_status` both
+bucket through a validated vocabulary instead); provider-only also
+mirrors the existing `proxy_cache_hit_rate_per_session` precedent.
+Verified green on real CI (`rust.yml`'s `test (ubuntu)` job and the
+full `ci.yml` suite); all 236 `cassandra-proxy --lib` tests plus the
+metrics integration suites pass.
 
 **Phase F spot-check result — cannot be trusted as done, real
 security-relevant gaps:** F1 (auth-mode classification) is solid. F2's
