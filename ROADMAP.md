@@ -330,7 +330,7 @@ landed; zero `PR-I*` markers anywhere in code):
 | I5 | Promote 3 stubbed parity comparators (`ccr`, `log_compressor`, `cache_aligner`) to real | Medium | PR-B3, PR-B7, PR-A2 | Partial — B3's CodeCompressor gap may not block this (different code path) |
 | I6 | Make `make test-parity` a per-PR CI gate (currently nightly, `continue-on-error`) | Low | PR-I5 | No |
 | I7 | Cache hot zone non-mutation tests (system/tools/frozen messages byte-equal under compression) | Low | PR-B2 | **Done** (2026-07-02) |
-| I8 | Tool-definition byte-stability golden-file snapshots | Low | PR-B7 | **Yes** |
+| I8 | Tool-definition byte-stability golden-file snapshots | Low | PR-B7 | **Done** (2026-07-02) |
 | I9 | Cache-hit-rate Prometheus alarm | Low | PR-G3 | **Yes** — `proxy_cache_hit_rate_per_session` confirmed to exist |
 | I10 | Replace fake RTK shim in wrap E2E with real RTK | Low | none | **Done** (2026-07-02) |
 
@@ -372,14 +372,26 @@ local_shell — OpenAI Responses opaque items) consolidate existing
 `make test-cache-hot-zone` target and a named CI step in `rust.yml`,
 same fast-fail-visibility pattern as PR-I1.
 
-Remaining unblocked, low-risk Phase I work: **I2, I3, I8** (SSE fuzz
-fixtures, compression-invariant property tests, tool-def byte-stability
-snapshots) and **I9** (cache-hit-rate Prometheus alarm — confirmed
-unblocked once G was verified). I4 (the shadow test that actually
-gates H1) is likely realistic to attempt now that Phase F's
-fingerprint-surface gaps (raw OAuth token storage, unconditional
-X-Forwarded-*) are fixed — it was specifically those gaps that made an
-OAuth/Subscription-safety shadow test premature before.
+**PR-I8 landed (2026-07-02)**, verified green in real CI. Spec named a
+Rust file, but tool-definition construction is still Python-owned
+(`create_ccr_tool_definition` in `cassandra/ccr/tool_injection.py`,
+`ANTHROPIC_CUSTOM_TOOLS` in `cassandra/proxy/memory_tool_adapter.py`)
+until Phase H ports it — built `tests/test_tool_def_byte_stability.py`
+against the real code instead, documented why in its module docstring.
+`cassandra_retrieve` already had solid coverage in
+`test_ccr_tool_always_on.py::test_tool_definition_byte_stable`; added
+thin golden-file re-verifications for it plus two net-new tests for
+`memory_save`/`memory_search`, which had zero prior byte-stability
+coverage. Golden files under `tests/golden/tool_defs/` generated
+programmatically from real output, not hand-transcribed.
+
+Remaining unblocked, low-risk Phase I work: **I2, I3** (SSE fuzz
+fixtures, compression-invariant property tests) and **I9** (cache-hit-
+rate Prometheus alarm — confirmed unblocked once G was verified). I4
+(the shadow test that actually gates H1) is likely realistic to attempt
+now that Phase F's fingerprint-surface gaps (raw OAuth token storage,
+unconditional X-Forwarded-*) are fixed — it was specifically those gaps
+that made an OAuth/Subscription-safety shadow test premature before.
 
 [12-decisions-needed.md](REALIGNMENT/12-decisions-needed.md) lists 15
 decisions the plan originally called blocking for Phase A (ICM deletion
