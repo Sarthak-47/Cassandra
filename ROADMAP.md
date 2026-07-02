@@ -167,7 +167,7 @@ Full detail in [REALIGNMENT/](REALIGNMENT/INDEX.md).
 | Phase | What | Status |
 |---|---|---|
 | A — Lockdown | Stop the cache-busting bugs (passthrough on `/v1/messages`) | **Verified** genuinely done (all 8, one spec-stale note — see below) |
-| B — Live-zone engine | Delete ~10K LOC (ICM/scoring/relevance), rebuild compression | **Verified** mostly done, 2 real gaps (relevance/ not deleted, CodeCompressor unwired — see below) |
+| B — Live-zone engine | Delete ~10K LOC (ICM/scoring/relevance), rebuild compression | **Verified** mostly done — CodeCompressor gap fixed 2026-07-02 (heuristic MVP, not a tree-sitter port); relevance/ deletion investigated and correctly NOT done (it's live code) — see below |
 | C — Rust proxy paths | Port remaining handlers, byte-level SSE parser | **Verified** well-built but not actually deployed (see critical finding above) — Conversations-API-awareness gap fixed 2026-07-02 |
 | D — Bedrock/Vertex native | Replace the currently-fake LiteLLM conversion | **Verified** genuinely native (SigV4/EventStream/ADC, real, not a LiteLLM shim) |
 | E — Cache stabilization | Deterministic tool/schema ordering | **Verified** mostly solid, 1/6 has a smaller acceptance-criteria gap (E2, E5, E6 fixed 2026-07-02, see below) |
@@ -202,20 +202,54 @@ replacing `errors="ignore"`, Rust 413-vs-400 + upstream request-id
 capture) are genuinely implemented.
 
 **Phase B spot-check result:** 5 of 7 PRs (B2, B4, B5, B6, B7) are solid,
-real implementations with genuine tests. Two real, undocumented gaps:
-(1) **PR-B1** — `crates/cassandra-core/src/relevance/` (~1,300 LOC of
-BM25/embedding/hybrid scorers, still `pub mod relevance` in `lib.rs`,
-actively imported by SmartCrusher/TextCrusher) was never deleted despite
-the spec's "~10K LOC delete" target, and the `fastembed` ML dependency
-it needs is still live. (2) **PR-B3** — `CodeCompressor` was never wired
-into the live-zone dispatcher; `ContentType::SourceCode` is hard-coded
-to `NoOp` with an explicit `TODO(PR-B4 / Rust code-compressor port)`
-comment, and the Rust test suite was rewritten to assert the no-op
-instead of the spec's named `..._routes_to_code_compressor` test —
-**meaning source-code tool_results get zero compression today.** Neither
-gap looks like negligence (both are consistent, deliberately-coded
-no-op branches with matching tests) — reads like an unreflected scope
-cut, not a stub.
+real implementations with genuine tests. Two real gaps found; one is
+**not actually fixable as originally framed, one is fixed:**
+
+(1) **PR-B1** — investigated (2026-07-02) and determined NOT to be a
+safe fix: `crates/cassandra-core/src/relevance/` (~1,300 LOC of
+BM25/embedding/hybrid scorers) is genuinely, actively imported by 5
+real files across `smart_crusher/` and `text_crusher/` — it's
+load-bearing for the current B2+ replacement architecture's
+relevance-aware compression, not leftover dead code. The original
+spec assumed it would become fully unreachable after the ICM/scoring
+deletion; the codebase correctly evolved to keep it because
+SmartCrusher/TextCrusher still need it. Deleting it per the literal
+spec would be a regression, not a fix — the spec is stale here, not
+the code (same pattern as the PR-A8 note above). Left as-is; the
+`fastembed` ML dependency stays live for the same reason.
+
+(2) **PR-B3's CodeCompressor gap is fixed (2026-07-02).**
+`ContentType::SourceCode` was hard-coded to `NoOp` with an explicit
+`TODO(PR-B4 / Rust code-compressor port)` comment — source-code
+tool_results got zero compression in production. Deliberately did
+NOT port Python's `CodeAwareCompressor` (tree-sitter AST parsing
+across 7 languages with semantic function-importance ranking, ~2,100
+LOC, plus a heavy optional dependency even Python's own fallback
+path doesn't avoid — it delegates to Kompress, which is *also*
+unwired on the Rust side). Instead built
+`crates/cassandra-core/src/transforms/code_compressor.rs`, a
+deliberately scoped MVP: pure line-based heuristics (no AST, no new
+dependencies) that classifies every line as Signature
+(declaration/scope-opener — never touched, the load-bearing safety
+property), Comment (start-of-line marker only, stripped), or Body
+(truncated in long contiguous runs, keeping head/tail with an
+omission marker). Not syntax-validity-guaranteeing or semantic,
+unlike Python's promise — an explicit, documented tradeoff given the
+read-by-an-LLM-not-executed context. Wired into `live_zone.rs`'s
+existing dispatcher via the same pattern as its siblings
+(SmartCrusher/LogCompressor/DiffCompressor); PR-B4's byte-threshold
+and tokenizer-validated-fallback safety nets wrap it automatically,
+unchanged. 13 new unit tests (including a real bug caught during
+testing: a standalone closing brace `}` was being swept into
+body-run truncation and could push out real content — fixed by
+treating bare scope-closers as signature-like). Replaced the old
+no-op-pinning integration test with
+`source_code_tool_result_routes_to_code_compressor`. Verified green
+on real CI (`rust.yml`'s `test (ubuntu)` job — full workspace
+`cargo test`, `cargo fmt --check`, `cargo clippy` — and the full
+`ci.yml` suite; first attempt hit a transient CI-infra disk-space
+failure on the runner, unrelated to the code, confirmed by fmt/clippy
+having already passed cleanly before it; a rerun came back green).
 
 **Phase C spot-check result:** C1–C3 are solid (byte-level SSE parser,
 `/v1/chat/completions`, and an unusually thorough `/v1/responses` item-type
