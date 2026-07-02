@@ -5,6 +5,10 @@ crates/*/target/
 # mkdocs
 /site/
 
+# Node (root has no package.json -- the real npm projects are
+# sdk/typescript, plugins/openclaw, plugins/opencode, docs)
+/node_modules/
+
 # Python
 __pycache__/
 *.py[cod]

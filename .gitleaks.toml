@@ -1,0 +1,42 @@
+title = "Cassandra gitleaks config"
+
+# Extend (not replace) gitleaks' default ruleset -- we still want jwt,
+# generic-api-key, aws-access-token, etc. detected everywhere real source
+# code lives. This file only allowlists confirmed false positives.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known false positives: test/bench fixtures and generated files"
+
+# Test and benchmark code intentionally contains synthetic
+# JWTs/API-keys/AWS-credential-shaped strings to exercise auth-mode
+# classification, SSE parsing, and Bedrock SigV4 code paths. None of these
+# are real credentials -- they're fixtures, several literally suffixed
+# "-FOR-TEST" or wrapping AWS's own public EXAMPLE key
+# (AKIAIOSFODNN7EXAMPLE, documented at
+# https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html).
+#
+# Path separators are `[/\\]` (not just `/`) so this matches identically
+# whether gitleaks reports POSIX or Windows-style relative paths.
+paths = [
+  '''(^|[/\\])tests[/\\]''',
+  '''(^|[/\\])crates[/\\][^/\\]+[/\\]tests[/\\]''',
+  '''(^|[/\\])crates[/\\][^/\\]+[/\\]benches[/\\]''',
+  '''(^|[/\\])benchmarks[/\\]''',
+  # Auto-generated: an SBOM crate-name entry and lockfile package hashes,
+  # neither of which can contain real secrets by construction.
+  '''(^|[/\\])sbom[/\\]''',
+  '''(^|[/\\])uv\.lock$''',
+  '''(^|[/\\])Cargo\.lock$''',
+]
+
+regexes = [
+  # GitHub's public OAuth App client ID for the Copilot CLI device-flow
+  # login (cassandra/copilot_auth.py). Client IDs in this Iv1.* format are
+  # meant to be embedded in public client applications -- not secret.
+  '''Iv1\.b507a08c87ecfe98''',
+  # Docstring example of what a JWT looks like (cassandra/config.py,
+  # documenting DynamicContentDetector's pattern list) -- not a real token.
+  '''eyJhbGciOiJIUzI1NiIs\.\.\.''',
+]
