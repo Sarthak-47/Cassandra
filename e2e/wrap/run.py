@@ -684,7 +684,9 @@ def verify_claude_wrap(base_env: dict[str, str], project_dir: Path, log_dir: Pat
     # this test regardless -- the shim being present on PATH was never
     # itself checked.
     rtk_entries = read_jsonl(rtk_log)
-    assert_true(len(rtk_entries) > 0, "rtk shim should have been invoked by claude wrap's hook registration")
+    assert_true(
+        len(rtk_entries) > 0, "rtk shim should have been invoked by claude wrap's hook registration"
+    )
     assert_true(
         rtk_entries[-1]["argv"][:2] == ["init", "--global"],
         f"rtk should have been invoked with `init --global`, got {rtk_entries[-1]['argv']!r}",
