@@ -21,6 +21,7 @@ token breakdowns per window that enable:
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
 import os
@@ -146,6 +147,17 @@ def _get_persist_path() -> Path:
     return _paths.subscription_state_path()
 
 
+def _hash_token_id(raw_token: str) -> str:
+    """One-way identifier for a bearer token: hash + last-4 chars.
+
+    PR-F3 (Realignment): used only to tell "was this the same token as
+    last time" apart for liveness/debugging; never sufficient to
+    reconstruct or use the token to authenticate.
+    """
+    digest = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()[:16]
+    return f"{digest}:{raw_token[-4:]}"
+
+
 class SubscriptionTracker(QuotaTracker):
     """Background tracker for Anthropic Claude Code subscription windows.
 
@@ -183,7 +195,12 @@ class SubscriptionTracker(QuotaTracker):
 
         self._lock = threading.Lock()
         self._state = SubscriptionState()
-        self._current_token: str | None = None
+        # PR-F3 (Realignment): one-way hash + last-4 chars, never the raw
+        # bearer. Used only for liveness bookkeeping / future debugging --
+        # never to authenticate. The actual polling fetch always resolves a
+        # fresh token via read_cached_oauth_token() (see _maybe_poll), not
+        # from anything cached here.
+        self._current_token_id: str | None = None
         self._full_tokens: dict[str, int] = {}  # token_prefix -> count of requests
 
         # PR-G2 (Realignment) — most recent session-incremental ``tokens_saved``
@@ -280,7 +297,7 @@ class SubscriptionTracker(QuotaTracker):
         if raw.startswith("sk-ant-api"):
             return
         with self._lock:
-            self._current_token = raw
+            self._current_token_id = _hash_token_id(raw)
             self._state.last_active_at = _utc_now()
             prefix = raw[:8]
             self._full_tokens[prefix] = self._full_tokens.get(prefix, 0) + 1
@@ -719,18 +736,20 @@ class SubscriptionTracker(QuotaTracker):
                 pass  # normal: poll interval elapsed
 
     async def _maybe_poll(self) -> None:
-        with self._lock:
-            is_active = self._state.is_active(active_window_s=self._active_window_s)
-            token = self._current_token
+        # PR-F3 (Realignment): always resolve a fresh token from the OS
+        # credentials file / env var rather than reusing an in-memory copy
+        # captured from a live request -- notify_active() only records a
+        # one-way hash (_current_token_id) for liveness bookkeeping, never
+        # a raw bearer that could be replayed here. This applies whether
+        # the session is currently "active" or not; the two paths used to
+        # diverge (active reused the live token, inactive fell back to the
+        # credentials file) but both need the same live-file lookup now
+        # that there's no cached raw token to fall back to.
+        from cassandra.subscription.client import read_cached_oauth_token
 
-        if not is_active:
-            # Try background poll using credentials file token
-            from cassandra.subscription.client import read_cached_oauth_token
-
-            bg_token = read_cached_oauth_token()
-            if not bg_token:
-                return
-            token = token or bg_token
+        token = read_cached_oauth_token()
+        if not token:
+            return
 
         snapshot = await self._client.fetch(token)
         if snapshot is None:

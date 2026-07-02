@@ -57,10 +57,15 @@ def test_tracker_notify_active_update_and_basic_state(monkeypatch: pytest.Monkey
     tracker.notify_active("")
     tracker.notify_active("Basic token")
     tracker.notify_active("Bearer sk-ant-api-key")
-    assert tracker._current_token is None
+    assert tracker._current_token_id is None
 
     tracker.notify_active("Bearer oauth-token-123")
-    assert tracker._current_token == "oauth-token-123"
+    # PR-F3 (Realignment): only a one-way hash + last-4 chars is retained,
+    # never the raw bearer -- assert the raw value is NOT what's stored,
+    # and that the id is deterministic for the same input.
+    assert tracker._current_token_id is not None
+    assert "oauth-token-123" not in tracker._current_token_id
+    assert tracker._current_token_id == tracker_module._hash_token_id("oauth-token-123")
     assert tracker._full_tokens["oauth-to"] == 1
     assert tracker.is_active() is True
 
@@ -189,12 +194,19 @@ async def test_maybe_poll_success_updates_state_and_metrics(
     tracker = SubscriptionTracker()
     tracker.notify_active("Bearer live-oauth-token")
 
+    # PR-F3 (Realignment): notify_active() no longer caches a raw bearer
+    # usable for polling -- _maybe_poll always resolves a fresh token via
+    # read_cached_oauth_token() regardless of active/inactive state.
+    monkeypatch.setattr(
+        "cassandra.subscription.client.read_cached_oauth_token", lambda: "cached-oauth-token"
+    )
+
     snapshot = _make_snapshot()
     discrepancies = [WindowDiscrepancy(kind="cache_miss", description="miss", severity="warning")]
     metrics_calls: list[dict] = []
 
     async def fetch_snapshot(token: str | None):
-        assert token == "live-oauth-token"
+        assert token == "cached-oauth-token"
         return snapshot
 
     tracker._client = SimpleNamespace(fetch=fetch_snapshot)
@@ -234,6 +246,11 @@ async def test_maybe_poll_runs_transcript_scan_off_event_loop(
     monkeypatch.setattr(SubscriptionTracker, "_load_persisted_state", lambda self: None)
     tracker = SubscriptionTracker()
     tracker.notify_active("Bearer live-oauth-token")
+    # PR-F3 (Realignment): _maybe_poll always needs a fresh token from
+    # read_cached_oauth_token() now -- notify_active() no longer caches one.
+    monkeypatch.setattr(
+        "cassandra.subscription.client.read_cached_oauth_token", lambda: "cached-oauth-token"
+    )
 
     snapshot = _make_snapshot()
 
