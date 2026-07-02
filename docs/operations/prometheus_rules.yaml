@@ -1,0 +1,55 @@
+# REALIGNMENT Phase I PR-I9 — continuous cache-hit-rate alarm.
+#
+# Fires when the per-session cache hit rate (proxy_cache_hit_rate_per_session,
+# see crates/cassandra-proxy/src/observability/cache_hit_rate.rs and
+# docs/observability.md) drifts below 90% of yesterday's same-window
+# rolling p50 for more than 15 minutes. Catches cache-busting
+# regressions in production before they show up as a customer cost
+# complaint.
+#
+# Validate locally with: promtool check rules docs/operations/prometheus_rules.yaml
+# (CI enforces this on every change via the `promtool-check` job in
+# .github/workflows/ci.yml, gated on this file changing.)
+#
+# Operators: point your Prometheus `rule_files:` config at this file,
+# or copy the group into your existing rules. See runbook.md for what
+# to do when this fires.
+groups:
+  - name: cassandra-proxy-cache-safety
+    rules:
+      - alert: CassandraCacheHitRateDriftBelowBaseline
+        # proxy_cache_hit_rate_per_session is a histogram in [0, 1]
+        # (see cache_hit_rate.rs's CACHE_HIT_RATE_BUCKETS), one
+        # observation per completed session, labeled by `provider`.
+        # histogram_quantile(0.5, ...) over a rate() window is the
+        # standard idiom for a rolling median from a Prometheus
+        # histogram. Comparing today's window against the identical
+        # window 24h ago (via `offset 1d`) accounts for legitimate
+        # day-of-week / time-of-day traffic-mix variance instead of
+        # alarming on a fixed absolute threshold.
+        expr: |
+          histogram_quantile(
+            0.5,
+            sum(rate(proxy_cache_hit_rate_per_session_bucket[15m])) by (le, provider)
+          )
+          <
+          0.9 * histogram_quantile(
+            0.5,
+            sum(rate(proxy_cache_hit_rate_per_session_bucket[15m] offset 1d)) by (le, provider)
+          )
+        for: 15m
+        labels:
+          severity: warning
+          team: cassandra-proxy
+          component: cache-safety
+        annotations:
+          summary: "Cassandra cache hit rate for {{ $labels.provider }} has dropped below baseline"
+          description: >-
+            proxy_cache_hit_rate_per_session's rolling 15m p50 for
+            provider "{{ $labels.provider }}" has been below 90% of the
+            same window 24h ago for more than 15 minutes. This usually
+            means a cache-busting regression shipped (a mutated hot
+            zone, non-deterministic tool/schema ordering, header
+            drift) rather than a legitimate traffic-mix shift -- see
+            the runbook.
+          runbook_url: "https://github.com/Sarthak-47/Cassandra/blob/main/docs/operations/runbook.md"

@@ -43,6 +43,7 @@ jobs:
       code: ${{ steps.filter.outputs.code }}
       e2e: ${{ steps.filter.outputs.e2e }}
       workflows: ${{ steps.filter.outputs.workflows }}
+      observability: ${{ steps.filter.outputs.observability }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
@@ -69,6 +70,9 @@ jobs:
               - 'pyproject.toml'
             workflows:
               - '.github/workflows/**'
+            observability:
+              - 'docs/operations/prometheus_rules.yaml'
+              - '.github/workflows/ci.yml'
 
   lint:
     needs: changes
@@ -454,6 +458,31 @@ jobs:
           sudo install ./bin/act /usr/local/bin/act
       - name: Validate workflow files
         run: bash scripts/validate-workflows.sh
+
+  # REALIGNMENT/11-phase-I-test-infra.md PR-I9's stated acceptance
+  # criterion is "Rule passes `promtool check rules`" -- not available
+  # locally (Windows dev box, no promtool/docker), so this job is the
+  # only place that criterion is actually enforced. Downloads the
+  # latest promtool release fresh each run rather than pinning a
+  # version, matching actionlint's install-latest pattern above.
+  promtool-check:
+    needs: changes
+    if: needs.changes.outputs.observability == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install promtool
+        run: |
+          TAG="$(curl -fsSL https://api.github.com/repos/prometheus/prometheus/releases/latest | grep -m1 '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')"
+          VERSION="${TAG#v}"
+          curl -fsSL -o /tmp/prometheus.tar.gz \
+            "https://github.com/prometheus/prometheus/releases/download/${TAG}/prometheus-${VERSION}.linux-amd64.tar.gz"
+          tar -xzf /tmp/prometheus.tar.gz -C /tmp
+          sudo install "/tmp/prometheus-${VERSION}.linux-amd64/promtool" /usr/local/bin/promtool
+          promtool --version
+      - name: promtool check rules
+        run: promtool check rules docs/operations/prometheus_rules.yaml
 
   docker-native-e2e:
     needs: changes
