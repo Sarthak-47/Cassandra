@@ -364,7 +364,21 @@ def create_shims(shim_dir: Path) -> None:
         #!/usr/bin/env python3
         from __future__ import annotations
 
+        import json
+        import os
         import sys
+        from pathlib import Path
+
+        # PR-I10: record every invocation so E2E assertions can tell a
+        # genuinely-exercised rtk-binary setup path from one where the
+        # real rtk lookup was silently skipped (e.g. cassandra's installer
+        # short-circuited before ever shelling out to `rtk`). Printing
+        # "rtk shim" to stdout alone doesn't survive into the test's
+        # assertions -- a JSONL record under CASSANDRA_E2E_LOG_DIR does.
+        log_dir = Path(os.environ["CASSANDRA_E2E_LOG_DIR"])
+        log_dir.mkdir(parents=True, exist_ok=True)
+        with (log_dir / "rtk.jsonl").open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps({"argv": sys.argv[1:]}) + "\\n")
 
         if "--version" in sys.argv:
             print("rtk e2e-shim")
@@ -642,6 +656,8 @@ def verify_codex_wrap(
 
 def verify_claude_wrap(base_env: dict[str, str], project_dir: Path, log_dir: Path) -> None:
     port = PROXY_PORT + 10
+    rtk_log = log_dir / "rtk.jsonl"
+    rtk_log.unlink(missing_ok=True)
     run(
         ["cassandra", "wrap", "claude", "--port", str(port), "--", "--help"],
         env=base_env,
@@ -658,6 +674,20 @@ def verify_claude_wrap(base_env: dict[str, str], project_dir: Path, log_dir: Pat
     assert_true(
         entries[-1]["probes"] == [{"url": f"http://127.0.0.1:{port}/health", "status": 200}],
         "Claude shim should prove ANTHROPIC_BASE_URL points at a live proxy",
+    )
+    # PR-I10: `rtk` being on PATH proves nothing about whether it was
+    # genuinely exercised -- `_setup_rtk` (default CASSANDRA_CONTEXT_TOOL)
+    # calls `register_claude_hooks`, which shells out to `rtk init --global
+    # --auto-patch`. Without this assertion, a code change that
+    # short-circuits before ever invoking the binary (e.g. an early return
+    # in `_setup_rtk`, or hook registration silently skipped) would pass
+    # this test regardless -- the shim being present on PATH was never
+    # itself checked.
+    rtk_entries = read_jsonl(rtk_log)
+    assert_true(len(rtk_entries) > 0, "rtk shim should have been invoked by claude wrap's hook registration")
+    assert_true(
+        rtk_entries[-1]["argv"][:2] == ["init", "--global"],
+        f"rtk should have been invoked with `init --global`, got {rtk_entries[-1]['argv']!r}",
     )
 
 
@@ -792,6 +822,13 @@ def verify_openhands_wrap(base_env: dict[str, str], project_dir: Path) -> None:
     OpenHands wires instructions via the OPENHANDS_INSTRUCTIONS env var at launch
     time (no on-disk artifact), so --prepare-only just exercises the rtk-binary
     setup path. The env-var wiring is covered by the unit tests.
+
+    Note: this path only does a `shutil.which("rtk")` lookup
+    (`cassandra/rtk/__init__.py::get_rtk_path`) -- it never actually shells
+    out to the rtk binary. The PR-I10 "was rtk genuinely exercised, not
+    just present on PATH" assertion lives in verify_claude_wrap instead,
+    where `register_claude_hooks` really does run `rtk init --global
+    --auto-patch` as a subprocess.
     """
     run(
         ["cassandra", "wrap", "openhands", "--prepare-only", "--port", str(OPENHANDS_PORT)],
