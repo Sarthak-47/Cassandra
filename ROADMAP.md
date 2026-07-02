@@ -329,7 +329,7 @@ landed; zero `PR-I*` markers anywhere in code):
 | I4 | Real-traffic shadow test, Python vs Rust, 10K requests, gates Phase H | Medium | PR-A1...PR-G3 (all of A–G) | No — needs G verified first |
 | I5 | Promote 3 stubbed parity comparators (`ccr`, `log_compressor`, `cache_aligner`) to real | Medium | PR-B3, PR-B7, PR-A2 | Partial — B3's CodeCompressor gap may not block this (different code path) |
 | I6 | Make `make test-parity` a per-PR CI gate (currently nightly, `continue-on-error`) | Low | PR-I5 | No |
-| I7 | Cache hot zone non-mutation tests (system/tools/frozen messages byte-equal under compression) | Low | PR-B2 | **Yes** |
+| I7 | Cache hot zone non-mutation tests (system/tools/frozen messages byte-equal under compression) | Low | PR-B2 | **Done** (2026-07-02) |
 | I8 | Tool-definition byte-stability golden-file snapshots | Low | PR-B7 | **Yes** |
 | I9 | Cache-hit-rate Prometheus alarm | Low | PR-G3 | **Yes** — `proxy_cache_hit_rate_per_session` confirmed to exist |
 | I10 | Replace fake RTK shim in wrap E2E with real RTK | Low | none | **Done** (2026-07-02) |
@@ -359,15 +359,27 @@ spec-named tests), two new fixtures (`openai_chat_completions_real.json`,
 patch, local_shell_call, reasoning, compaction), and a `make
 test-byte-faithful` target.
 
-Remaining unblocked, low-risk Phase I work: **I2, I3, I7, I8** (SSE
-fuzz fixtures, compression-invariant property tests, cache-hot-zone
-non-mutation tests, tool-def byte-stability snapshots) and **I9**
-(cache-hit-rate Prometheus alarm — confirmed unblocked once G was
-verified). I4 (the shadow test that actually gates H1) is likely
-realistic to attempt now that Phase F's fingerprint-surface gaps (raw
-OAuth token storage, unconditional X-Forwarded-*) are fixed — it was
-specifically those gaps that made an OAuth/Subscription-safety shadow
-test premature before.
+**PR-I7 landed (2026-07-02)**, verified green in real CI. Added
+`crates/cassandra-proxy/tests/integration_cache_hot_zone.rs` with all 9
+spec-named tests. 5 are net new (system/tools/frozen-messages/thinking-
+signature/redacted-thinking), built against a shared payload helper
+that includes a large compressible `tool_result` in every request
+specifically so each test proves the live zone *did* shrink, not just
+that nothing ran (a hot-zone assertion that passes vacuously would be a
+false sense of safety). The other 4 (reasoning/compaction/v4a/
+local_shell — OpenAI Responses opaque items) consolidate existing
+`integration_responses.rs` coverage into this canonical file. Added a
+`make test-cache-hot-zone` target and a named CI step in `rust.yml`,
+same fast-fail-visibility pattern as PR-I1.
+
+Remaining unblocked, low-risk Phase I work: **I2, I3, I8** (SSE fuzz
+fixtures, compression-invariant property tests, tool-def byte-stability
+snapshots) and **I9** (cache-hit-rate Prometheus alarm — confirmed
+unblocked once G was verified). I4 (the shadow test that actually
+gates H1) is likely realistic to attempt now that Phase F's
+fingerprint-surface gaps (raw OAuth token storage, unconditional
+X-Forwarded-*) are fixed — it was specifically those gaps that made an
+OAuth/Subscription-safety shadow test premature before.
 
 [12-decisions-needed.md](REALIGNMENT/12-decisions-needed.md) lists 15
 decisions the plan originally called blocking for Phase A (ICM deletion
