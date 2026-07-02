@@ -244,9 +244,19 @@ landed; zero `PR-I*` markers anywhere in code):
 | I7 | Cache hot zone non-mutation tests (system/tools/frozen messages byte-equal under compression) | Low | PR-B2 | **Yes** |
 | I8 | Tool-definition byte-stability golden-file snapshots | Low | PR-B7 | **Yes** |
 | I9 | Cache-hit-rate Prometheus alarm | Low | PR-G3 | Unknown — G not yet verified |
-| I10 | Replace fake RTK shim in wrap E2E with real RTK | Low | none | **Yes** |
+| I10 | Replace fake RTK shim in wrap E2E with real RTK | Low | none | **Done** (2026-07-02) |
 
-Five PRs (I1, I2, I3, I7, I8) are low-risk, well-specified, and
+**PR-I10 landed (2026-07-02)**, verified green in real CI (`docker-wrap-e2e`
+job, not just locally): the spec offered two options — full real-RTK
+download in CI, or keep the shim but assert it was genuinely invoked
+(not just present on PATH). Took the lower-risk option. Traced which wrap
+flows actually shell out to `rtk` first: `wrap openhands --prepare-only`
+only does a `shutil.which` lookup (never executes it), while `wrap claude`
+genuinely runs `rtk init --global --auto-patch` via `register_claude_hooks`
+— that's where the assertion landed. First Phase I PR to actually exist
+in code.
+
+Four PRs (I1, I2, I3, I7, I8) remain low-risk, well-specified, and
 unblocked right now — genuinely good next work, in contrast to H1 which
 cannot start yet. I4 (the shadow test that actually gates H1) needs E/F/G
 verified and possibly built out first.
