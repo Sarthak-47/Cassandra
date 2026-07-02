@@ -148,12 +148,19 @@ not on what the code actually contains. Grepping the tracked `PR-<phase><n>`
 markers that REALIGNMENT's own docs use to label each unit of work against
 what's actually referenced in `crates/` and `cassandra/` source comments:
 **39 of the 51 planned PRs have a corresponding implementation marker in
-code.** Phases A–G are each fully represented (every `PR-A*`...`PR-G*` ID
-shows up somewhere in source); the gap is almost entirely Phase H (Python
-proxy retirement — only `PR-H2` found, `H1/H3/H4` missing) and Phase I
-(test-infra tagging — zero `PR-I*` markers found in `tests/`, though the
-~7,700-test suite that exists suggests real test infra just isn't tagged
-with these IDs, or Phase I was never formally kicked off as its own effort).
+code.** Phases A–G are each fully represented at the marker level (every
+`PR-A*`...`PR-G*` ID shows up somewhere in source); the gap is almost
+entirely Phase H (Python proxy retirement — only `PR-H2` found, `H1/H3/H4`
+missing) and Phase I (test-infra — only `PR-I10` found as of this session's
+work, see below).
+
+**Update: every phase A–G has now been read directly against its spec**
+(not just marker-grep) — see the per-phase detail below. Marker presence
+turned out to be a poor completeness proxy: A and D hold up as genuinely
+solid, G is nearly solid, B/C/E have real-but-survivable gaps, and F has
+confirmed security-relevant gaps that mean it should not be treated as
+done. Don't trust the "Implemented (N/N markers)" framing alone for any
+phase without reading its detail note.
 
 Full detail in [REALIGNMENT/](REALIGNMENT/INDEX.md).
 
@@ -163,11 +170,11 @@ Full detail in [REALIGNMENT/](REALIGNMENT/INDEX.md).
 | B — Live-zone engine | Delete ~10K LOC (ICM/scoring/relevance), rebuild compression | **Verified** mostly done, 2 real gaps (relevance/ not deleted, CodeCompressor unwired — see below) |
 | C — Rust proxy paths | Port remaining handlers, byte-level SSE parser | **Verified** well-built but not actually deployed (see critical finding above) + 1 dropped feature |
 | D — Bedrock/Vertex native | Replace the currently-fake LiteLLM conversion | **Verified** genuinely native (SigV4/EventStream/ADC, real, not a LiteLLM shim) |
-| E — Cache stabilization | Deterministic tool/schema ordering | Implemented (6/6 markers) — not yet spot-checked |
-| F — Auth-mode policy | PAYG/OAuth/subscription-aware compression | Implemented (4/4 markers) — not yet spot-checked |
-| G — RTK + observability | Broader wrap-CLI support, metrics | Implemented (3/3 markers) — not yet spot-checked |
-| H — Python retirement | Delete the Python proxy once Rust hits parity | Mostly not started (1/4 — only PR-H2) |
-| I — Test infra | SHA-256 round-trip tests, parity gates | Untagged / unclear (0/10 markers, but tests/ has ~7,700 tests) |
+| E — Cache stabilization | Deterministic tool/schema ordering | **Verified** mostly solid, 4/6 have smaller acceptance-criteria gaps (see below) |
+| F — Auth-mode policy | PAYG/OAuth/subscription-aware compression | **Verified** real security-relevant gaps — see below, don't trust "done" |
+| G — RTK + observability | Broader wrap-CLI support, metrics | **Verified** strongest phase audited, 1 minor gap; unblocks Phase I PR-I9 |
+| H — Python retirement | Delete the Python proxy once Rust hits parity | Mostly not started (1/4 — only PR-H2); PR-H1 is a HIGH-RISK -15K LOC deletion, not startable yet (see below) |
+| I — Test infra | SHA-256 round-trip tests, parity gates | 1/10 landed (PR-I10, verified green in real CI); 5 more unblocked (see below) |
 
 **Phase A spot-check result (2026-07-02):** all 8 PR-A markers verified
 against actual code, not just grep — read the real implementation of
@@ -224,9 +231,73 @@ path" — is the critical finding above: falsified by the codebase's own
 comments (`crates/cassandra-py/src/lib.rs:1560-1569`), since the Rust
 proxy binary isn't what `cassandra proxy` deploys.
 
-Next real step: same spot-check treatment for E–G (only A, B, C, D have
-been read against spec so far) to know the true completion state before
-deciding anything about H.
+**Phase E spot-check result:** substantially real work, no dead-code
+stubs, genuine wiring into the hot path — but 4 of 6 PRs fall short of
+their own acceptance criteria in ways worth knowing about, not
+blockers: **E2** (schema key sort) is missing its required snapshot
+test on a real production tool schema. **E3** (Anthropic `cache_control`
+auto-placement) ships exactly 1 marker (last tool only) instead of the
+spec's 4 (system/tools/history-boundary/latest-user) — a deliberate,
+well-documented first-ship scope cut pending telemetry, not a bug.
+**E5** (volatile-content detector) is missing 2 of 5 required pattern
+types (JWT tokens, long hex build-hashes). **E6** (cache-bust drift
+telemetry) has the real detection logic wired in but the spec'd
+`prefix_drift_detected_total` Prometheus counter doesn't exist — only a
+log line fires.
+
+**Phase F spot-check result — cannot be trusted as done, real
+security-relevant gaps:** F1 (auth-mode classification) is solid. F2's
+two most important gates (`cache_control`/`prompt_cache_key` PAYG-only
+injection) genuinely work, confirmed by direct code read
+(`live_zone_anthropic.rs`, `proxy.rs::maybe_inject_openai_prompt_cache_key`).
+*Correction to the sub-agent's initial finding:* it flagged
+`auth_mode_policy_enforcement` as defaulting to `Disabled` in
+`config.rs:619` — checked directly, that's the **test-only** config
+constructor (explicitly commented as such); the real production default
+via clap's `default_value_t` at `config.rs:304` is `Enabled`. A stale
+comment in `proxy.rs:423` ("Disabled (default until c6/6)") was written
+mid-rollout and never updated — that's what misled the first pass. What
+*does* hold up: F2's "no lossy compressors for OAuth/Subscription"
+requirement (`CompressionPolicy.max_lossy_ratio`, `live_zone_only`) is
+genuinely plumbed-but-unconsumed — no compressor reads either field.
+**F3** has a confirmed real gap: the spec explicitly requires (see
+[08-phase-F-auth-mode.md:175](REALIGNMENT/08-phase-F-auth-mode.md))
+replacing raw OAuth bearer storage with a one-way hash, but
+`cassandra/subscription/tracker.py:283` still does `self._current_token
+= raw` — verified directly, the full bearer token sits in process
+memory. TOIN's per-tenant key mechanism is real but no production call
+site threads live `auth_mode`/`model_family` in, so real observations
+still land under `"unknown"`. **F4** is the weakest: `headers.rs::
+build_forward_request_headers` takes no `AuthMode` parameter at all
+(verified — its signature has zero mode-awareness) and is called
+unconditionally, so `X-Forwarded-*` fingerprint suppression for
+Subscription mode doesn't exist on the Rust path. `accept-encoding` is
+also stripped unconditionally in both `anthropic.py:684` and
+`openai.py:1714` with no auth-mode check (verified directly) — this
+actively violates the spec's "Subscription: preserve accept-encoding,
+never strip" stealth requirement. **Given Phase F's whole stated
+purpose is avoiding provider detection/flagging on OAuth and
+Subscription accounts, F3 and F4's gaps are not cosmetic — they're
+exactly the fingerprint surface the phase exists to close.**
+
+**Phase G spot-check result:** the strongest phase audited — heavy,
+real edge-case test coverage (NaN/infinity/aborted-stream handling in
+metrics, multi-worker lock contention in RTK polling). G1 and G2 are
+fully genuine. G3 is mostly genuine with one confirmed gap:
+`wrap_rtk_tokens_saved_per_session` doesn't exist in code on either
+side, despite `docs/rtk-architecture.md` claiming Rust owns it and a
+Rust comment claiming Python owns it — both sides think the other
+built it. **Confirms Phase I's PR-I9 (cache-hit-rate Prometheus alarm)
+is genuinely unblocked**: `proxy_cache_hit_rate_per_session` exists,
+is registered, and is wired into all three provider SSE paths with
+real edge-case tests.
+
+All of A–G have now been read against their specs (not just
+marker-grep). Summary: A and D are genuinely solid. G is nearly
+solid (1 minor gap). B, C, E have real-but-survivable gaps. **F is
+the one phase that shouldn't be marked done** — its core promise
+(reduce OAuth/Subscription fingerprint surface) has two confirmed,
+unaddressed holes.
 
 **Phase I scope, read directly from
 [11-phase-I-test-infra.md](REALIGNMENT/11-phase-I-test-infra.md)** (10
@@ -243,7 +314,7 @@ landed; zero `PR-I*` markers anywhere in code):
 | I6 | Make `make test-parity` a per-PR CI gate (currently nightly, `continue-on-error`) | Low | PR-I5 | No |
 | I7 | Cache hot zone non-mutation tests (system/tools/frozen messages byte-equal under compression) | Low | PR-B2 | **Yes** |
 | I8 | Tool-definition byte-stability golden-file snapshots | Low | PR-B7 | **Yes** |
-| I9 | Cache-hit-rate Prometheus alarm | Low | PR-G3 | Unknown — G not yet verified |
+| I9 | Cache-hit-rate Prometheus alarm | Low | PR-G3 | **Yes** — `proxy_cache_hit_rate_per_session` confirmed to exist |
 | I10 | Replace fake RTK shim in wrap E2E with real RTK | Low | none | **Done** (2026-07-02) |
 
 **PR-I10 landed (2026-07-02)**, verified green in real CI (`docker-wrap-e2e`
@@ -256,10 +327,14 @@ genuinely runs `rtk init --global --auto-patch` via `register_claude_hooks`
 — that's where the assertion landed. First Phase I PR to actually exist
 in code.
 
-Four PRs (I1, I2, I3, I7, I8) remain low-risk, well-specified, and
-unblocked right now — genuinely good next work, in contrast to H1 which
-cannot start yet. I4 (the shadow test that actually gates H1) needs E/F/G
-verified and possibly built out first.
+Five PRs (I1, I2, I3, I7, I8, I9 — six, correcting the count now that
+E/F/G are verified) are low-risk, well-specified, and unblocked right
+now — genuinely good next work, in contrast to H1 which cannot start
+yet. I4 (the shadow test that actually gates H1) is still not
+realistically startable: Phase F's confirmed fingerprint-surface gaps
+(raw OAuth token storage, unconditional X-Forwarded-*/accept-encoding)
+should probably be fixed before running a shadow test that's supposed
+to validate OAuth/Subscription-safe behavior.
 
 [12-decisions-needed.md](REALIGNMENT/12-decisions-needed.md) lists 15
 decisions the plan originally called blocking for Phase A (ICM deletion
