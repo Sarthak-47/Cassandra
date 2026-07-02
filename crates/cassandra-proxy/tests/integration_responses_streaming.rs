@@ -25,9 +25,9 @@
 mod common;
 
 use bytes::Bytes;
+use cassandra_proxy::sse::{openai_responses::ResponseState, SseFramer};
 use common::start_proxy_with;
 use futures_util::StreamExt;
-use cassandra_proxy::sse::{openai_responses::ResponseState, SseFramer};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use std::convert::Infallible;

@@ -3,8 +3,8 @@
 
 mod common;
 
-use common::{start_proxy, start_proxy_with};
 use cassandra_proxy::config::StripInternalHeaders;
+use common::{start_proxy, start_proxy_with};
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 

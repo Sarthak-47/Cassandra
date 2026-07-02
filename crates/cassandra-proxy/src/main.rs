@@ -6,9 +6,9 @@
 
 use std::net::SocketAddr;
 
-use clap::Parser;
 use cassandra_proxy::config::CliArgs;
 use cassandra_proxy::{build_app, AppState, Config};
+use clap::Parser;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;

@@ -182,7 +182,9 @@ mod redis_tests {
     #[test]
     fn redis_round_trip_via_from_config() {
         let Some(url) = redis_url() else {
-            eprintln!("skipping redis_round_trip_via_from_config: CASSANDRA_TEST_REDIS_URL not set");
+            eprintln!(
+                "skipping redis_round_trip_via_from_config: CASSANDRA_TEST_REDIS_URL not set"
+            );
             return;
         };
         let cfg = CcrBackendConfig::Redis {

@@ -1,8 +1,8 @@
 //! `parity-run` CLI: drive the parity harness from the command line.
 
 use anyhow::Result;
-use clap::{Parser, Subcommand};
 use cassandra_parity::{builtin_comparators, run_comparator};
+use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]

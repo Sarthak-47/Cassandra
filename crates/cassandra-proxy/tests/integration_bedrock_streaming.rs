@@ -24,10 +24,10 @@ mod common;
 
 use aws_credential_types::Credentials;
 use bytes::{Bytes, BytesMut};
-use common::start_proxy_with_state;
 use cassandra_proxy::bedrock::{
     parse_eventstream, CrcValidation, EventStreamParser, HeaderValue, MessageBuilder, ParseError,
 };
+use common::start_proxy_with_state;
 use proptest::prelude::*;
 use serde_json::json;
 use url::Url;

@@ -25,8 +25,8 @@ mod common;
 
 use aws_credential_types::Credentials;
 use bytes::{Bytes, BytesMut};
-use common::start_proxy_with_state;
 use cassandra_proxy::bedrock::MessageBuilder;
+use common::start_proxy_with_state;
 use serde_json::json;
 use url::Url;
 use wiremock::matchers::{method, path};

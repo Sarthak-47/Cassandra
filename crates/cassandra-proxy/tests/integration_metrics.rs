@@ -25,10 +25,10 @@
 mod common;
 
 use bytes::Bytes;
-use common::start_proxy_with;
 use cassandra_proxy::observability;
 use cassandra_proxy::sse::openai_responses::ResponseState;
 use cassandra_proxy::sse::SseFramer;
+use common::start_proxy_with;
 use serde_json::json;
 use std::convert::Infallible;
 use std::net::SocketAddr;

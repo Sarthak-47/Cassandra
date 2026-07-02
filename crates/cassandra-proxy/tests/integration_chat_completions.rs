@@ -29,9 +29,9 @@
 mod common;
 
 use bytes::Bytes;
-use common::start_proxy_with;
 use cassandra_proxy::sse::framing::SseFramer;
 use cassandra_proxy::sse::openai_chat::ChunkState;
+use common::start_proxy_with;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::sync::{Arc, Mutex};

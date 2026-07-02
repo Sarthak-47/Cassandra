@@ -452,7 +452,11 @@ impl PyDiffCompressor {
 /// Defaults match Python's dataclass byte-for-byte. The constructor
 /// accepts every field as a kwarg with the same name and type so the
 /// Python shim can pass `SmartCrusherConfig(**asdict(py_cfg))`.
-#[pyclass(name = "SmartCrusherConfig", module = "cassandra._core", from_py_object)]
+#[pyclass(
+    name = "SmartCrusherConfig",
+    module = "cassandra._core",
+    from_py_object
+)]
 #[derive(Clone)]
 struct PySmartCrusherConfig {
     inner: RustSmartCrusherConfig,
