@@ -34,7 +34,7 @@ proxy = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",
     "litellm>=1.84.0",  # PYSEC-2026-388, CVE-2026-40217/47101/47102
-    "httpx>=0.24",
+    "httpx[http2]>=0.24",  # server.py defaults http2=True on the AsyncClient
     "mcp>=1.0",
     # Transitive deps pinned to patched floors (pip-audit, 2026-07-02):
     "aiohttp>=3.14.1",  # PYSEC-2026-237 and 10 related CVEs in <3.14.1
