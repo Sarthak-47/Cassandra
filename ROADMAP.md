@@ -174,7 +174,7 @@ Full detail in [REALIGNMENT/](REALIGNMENT/INDEX.md).
 | F — Auth-mode policy | PAYG/OAuth/subscription-aware compression | **Verified, fully closed** — every gap found (F2 accept-encoding, F3 raw token + TOIN keying, F4) fixed (2026-07-02) — see below |
 | G — RTK + observability | Broader wrap-CLI support, metrics | **Verified** strongest phase audited, 1 minor gap; unblocks Phase I PR-I9 |
 | H — Python retirement | Delete the Python proxy once Rust hits parity | Mostly not started (1/4 — only PR-H2); PR-H1 is a HIGH-RISK -15K LOC deletion, not startable yet (see below) |
-| I — Test infra | SHA-256 round-trip tests, parity gates | 7/10 landed (I1, I2, I3, I7, I8, I9, I10 — all verified green in real CI); I5/I6 blocked on B3's CodeCompressor gap, I4 needs Phase A-G fully verified first (see below) |
+| I — Test infra | SHA-256 round-trip tests, parity gates | 7/10 landed (I1, I2, I3, I7, I8, I9, I10) + I5 partial (log_compressor comparator) — all verified green in real CI; I5's ccr/cache_aligner comparators need session-state handling, I4 needs real production traffic (see below) |
 
 **Phase A spot-check result (2026-07-02):** all 8 PR-A markers verified
 against actual code, not just grep — read the real implementation of
@@ -429,7 +429,7 @@ landed; zero `PR-I*` markers anywhere in code):
 | I2 | SSE corner-case fixtures + 10K-case fuzz/proptest | Low | PR-C1 | **Done** (2026-07-02) |
 | I3 | Property tests for compression invariants (determinism, idempotence, token-non-increasing, position/frozen-prefix preservation) | Low | PR-B4 | **Done** (2026-07-02) |
 | I4 | Real-traffic shadow test, Python vs Rust, 10K requests, gates Phase H | Medium | PR-A1...PR-G3 (all of A–G) | No — needs G verified first |
-| I5 | Promote 3 stubbed parity comparators (`ccr`, `log_compressor`, `cache_aligner`) to real | Medium | PR-B3, PR-B7, PR-A2 | Partial — B3's CodeCompressor gap may not block this (different code path) |
+| I5 | Promote 3 stubbed parity comparators (`ccr`, `log_compressor`, `cache_aligner`) to real | Medium | PR-B3, PR-B7, PR-A2 | **Partial: `log_compressor` done (2026-07-02)**; `ccr`/`cache_aligner` still stubbed — see below |
 | I6 | Make `make test-parity` a per-PR CI gate (currently nightly, `continue-on-error`) | Low | PR-I5 | No |
 | I7 | Cache hot zone non-mutation tests (system/tools/frozen messages byte-equal under compression) | Low | PR-B2 | **Done** (2026-07-02) |
 | I8 | Tool-definition byte-stability golden-file snapshots | Low | PR-B7 | **Done** (2026-07-02) |
@@ -533,12 +533,37 @@ ago via `offset 1d`, per `provider`) and `docs/operations/runbook.md`
 (triage steps ranked by likelihood, tying back to the specific
 REALIGNMENT phases most likely to cause a drift).
 
-Remaining unblocked, low-risk Phase I work: **I2** (SSE fuzz fixtures).
-I4 (the shadow test that actually gates H1) is likely realistic to
-attempt now that Phase F's fingerprint-surface gaps (raw OAuth token
-storage, unconditional X-Forwarded-*) are fixed — it was specifically
-those gaps that made an OAuth/Subscription-safety shadow test premature
-before. I5/I6 remain blocked on Phase B3's CodeCompressor gap.
+**PR-I5 (partial) landed (2026-07-02).** Promoted the `log_compressor`
+stub comparator (`crates/cassandra-parity/src/lib.rs`) to real —
+20/20 recorded fixtures now match byte-for-byte
+(`cargo run -p cassandra-parity --bin parity-run -- run --fixtures
+tests/parity/fixtures` reports `matched=20 skipped=0 diffed=0`).
+Discovery worth noting: Python's `LogCompressor` is already a thin
+PyO3 wrapper delegating to this exact Rust struct, so this comparator
+is a regression lock against the recorded fixtures, not a live
+cross-language check — documented accurately in the comparator's own
+doc comment rather than the misleading "parity" framing. `ccr` and
+`cache_aligner` stay stubbed: both have genuine hidden state the
+recorded fixtures don't capture —
+`CCRToolInjector.inject_tool_definition()` depends on
+`self.has_compressed_content` from a prior `scan_for_markers()` call,
+and `CacheAligner.apply()`'s `cache_metrics.previous_hash` depends on
+the previous call in the same session. Promoting those needs either
+re-recording session-aware fixtures or a different harness shape —
+real, but a different (and larger) task than a straightforward
+wire-up. Verified green on real CI (`rust.yml`'s `test (ubuntu)` job
+and the full `ci.yml` suite).
+
+Now that B3's CodeCompressor gap is fixed (2026-07-02), I6 (making
+`make test-parity` a per-PR CI gate) is unblocked by I5's original
+blocker list, though I5 itself is still only partial (2 of 3
+comparators remain stubbed) — worth another look once/if `ccr` and
+`cache_aligner` get their session-state handling sorted. I4 (the
+shadow test that actually gates H1) is likely realistic to attempt
+now that Phase F's fingerprint-surface gaps are fixed — it was
+specifically those gaps that made an OAuth/Subscription-safety shadow
+test premature before, though it also needs real production traffic
+to run meaningfully, which isn't available in this dev environment.
 
 [12-decisions-needed.md](REALIGNMENT/12-decisions-needed.md) lists 15
 decisions the plan originally called blocking for Phase A (ICM deletion
