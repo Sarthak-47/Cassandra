@@ -64,11 +64,21 @@ intentional byte mutations do not trip the alarm.
 | Name | Type | Labels | Purpose |
 |------|------|--------|---------|
 | `wrap_rtk_invocations_total` | Counter | `tool` | RTK invocations observed via the wrap-CLI tail. Surfaced via the Python proxy's `/metrics` exporter; the wrap CLI bumps `cassandra.cli.wrap_rtk_metrics.record_rtk_invocation(...)`. |
+| `wrap_rtk_tokens_saved_per_session` | Gauge | _none_ | Cumulative tokens saved by RTK within the current subscription window / wrap session. Sourced from `SubscriptionTracker.state["contribution"]["tokens_saved"]["rtk_raw"]` (wired end-to-end by PR-G2). |
 
 > **C4 remediation:** This counter is Python-side because RTK is
 > wrapped by `cassandra wrap` (Python CLI) and the wrap-side tail
 > is the natural emit site. The Rust proxy previously held a dead
 > counter for this metric; that has been removed.
+>
+> **`wrap_rtk_tokens_saved_per_session` is a gauge, not the
+> histogram the original spec named.** `cassandra wrap <agent>`
+> spawns the proxy as a child process for the duration of one
+> session (see `docs/rtk-architecture.md`), so there's no scrape
+> after "session end" to observe a bucket into — the process has
+> already exited. A gauge of the *current* session's live
+> cumulative RTK savings is the value an operator dashboard can
+> actually read mid-session.
 
 #### Image log redaction (Python-side)
 

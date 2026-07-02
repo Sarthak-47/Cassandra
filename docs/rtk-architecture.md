@@ -23,9 +23,13 @@ It surfaces value in two places:
 2. **Tokens saved per session** — aggregated at wrap-session end.
 
 Both signals feed `wrap_rtk_invocations_total` and
-`wrap_rtk_tokens_saved_per_session` (registered by the Rust proxy's
-observability surface so a single `/metrics` scrape exposes the full
-picture).
+`wrap_rtk_tokens_saved_per_session`. Both are registered and exported
+Python-side (`cassandra/proxy/prometheus_metrics.py`), not by the Rust
+proxy — the Rust side originally held dead counters for both; those
+were removed once it was clear RTK tracking is entirely a wrap-CLI /
+Python-proxy concern (see `docs/observability.md`'s C4 remediation
+note). A single `/metrics` scrape still exposes the full picture,
+since the Python proxy's exporter is what backs `GET /metrics`.
 
 ## Proxy-side RTK was considered and rejected
 
@@ -77,8 +81,13 @@ registry:
 - `wrap_rtk_invocations_total{tool}` — driven by the wrap-CLI
   polling `rtk gain --format json` and incrementing the registered
   counter by the delta since last poll.
-- `wrap_rtk_tokens_saved_per_session` — emitted at wrap-session
-  close.
+- `wrap_rtk_tokens_saved_per_session` — a gauge (not a histogram;
+  see `docs/observability.md`'s note on why) reflecting the current
+  session's live cumulative RTK savings, sourced from
+  `SubscriptionTracker`'s `tokens_saved_rtk` field (PR-G2). Read
+  continuously during the session rather than emitted once at
+  close, since the proxy process usually exits at session end and
+  wouldn't be scrapeable afterward.
 
 This keeps the operator dashboard single-pane-of-glass without
 re-implementing RTK inside the proxy.

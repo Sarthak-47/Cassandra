@@ -1328,4 +1328,50 @@ class PrometheusMetrics:
                     lines.append(f'wrap_rtk_invocations_total{{tool="{safe_tool}"}} {count}')
             lines.append("")
 
+            # Phase G PR-G3 remediation (C4, part 2): the
+            # `wrap_rtk_tokens_saved_per_session` metric named in the
+            # constants removed from the Rust side (see
+            # `observability/metric_names.rs`'s comment on this) had
+            # never actually been exported by either side —
+            # `tokens_saved_rtk` was wired end-to-end into
+            # `SubscriptionTracker` by PR-G2, but nothing scraped it.
+            #
+            # The spec calls this a histogram "populated at session
+            # end". That shape doesn't fit how this proxy actually
+            # runs: `cassandra wrap <agent>` spawns the proxy as a
+            # child process for the duration of a single session
+            # (see docs/rtk-architecture.md), so there is no later
+            # scrape after "session end" to observe a bucket into —
+            # the process is gone by then. A gauge exposing the
+            # *current* session's live cumulative RTK savings is the
+            # value an operator dashboard can actually read, and it's
+            # sourced from the same `tokens_saved["rtk_raw"]` counter
+            # PR-G2 already keeps correct (delta-polled from `rtk gain
+            # --format json`, de-baselined per proxy session, reset
+            # detection included). This mirrors the documented
+            # cardinality-discipline precedent set by
+            # `prefix_drift_detected_total` (provider-only) and
+            # `proxy_conversations_api_request_count_total`
+            # (unlabelled) in the Rust exporter: deviate from a
+            # spec-literal shape when the literal shape doesn't map to
+            # this deployment's actual process lifetime.
+            from cassandra.subscription.tracker import get_subscription_tracker
+
+            tracker = get_subscription_tracker()
+            tokens_saved_rtk = 0
+            if tracker is not None:
+                tokens_saved_rtk = tracker.state["contribution"]["tokens_saved"]["rtk_raw"]
+            _append_metric(
+                lines,
+                name="wrap_rtk_tokens_saved_per_session",
+                metric_type="gauge",
+                help_text=(
+                    "Cumulative tokens saved by RTK (Realtime Token Kompress) "
+                    "within the current subscription window / wrap session, "
+                    "as tracked by SubscriptionTracker.tokens_saved_rtk. "
+                    "Resets when the 5h subscription window rolls over."
+                ),
+                value=tokens_saved_rtk,
+            )
+
             return "\n".join(lines)
