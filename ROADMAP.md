@@ -407,14 +407,35 @@ verified green on real CI (`ci.yml`, commit `46223f0`).
 **Phase G spot-check result:** the strongest phase audited — heavy,
 real edge-case test coverage (NaN/infinity/aborted-stream handling in
 metrics, multi-worker lock contention in RTK polling). G1 and G2 are
-fully genuine. G3 is mostly genuine with one confirmed gap:
-`wrap_rtk_tokens_saved_per_session` doesn't exist in code on either
-side, despite `docs/rtk-architecture.md` claiming Rust owns it and a
-Rust comment claiming Python owns it — both sides think the other
-built it. **Confirms Phase I's PR-I9 (cache-hit-rate Prometheus alarm)
-is genuinely unblocked**: `proxy_cache_hit_rate_per_session` exists,
-is registered, and is wired into all three provider SSE paths with
-real edge-case tests.
+fully genuine. G3's one confirmed gap — `wrap_rtk_tokens_saved_per_session`
+didn't exist in code on either side, despite `docs/rtk-architecture.md`
+claiming Rust owns it and a Rust comment claiming Python owns it, both
+sides thinking the other built it — **is fixed (2026-07-03)**. Exported
+as a gauge (not the histogram the original spec named) in
+`cassandra/proxy/prometheus_metrics.py`, sourced from
+`SubscriptionTracker.tokens_saved_rtk` (already wired end-to-end by
+PR-G2, just never scraped). Deliberately not a histogram: `cassandra
+wrap <agent>` spawns the proxy as a child process for one session, so
+there's no scrape after "session end" to observe a bucket into — a
+gauge of the live current-session cumulative value is what an operator
+dashboard can actually read. Both stale `docs/rtk-architecture.md`
+claims (Rust "registers" these metrics) corrected to point at the
+Python exporter. 2 new tests; verified green on real CI (`ci.yml`,
+commit `67cdafa`). **Confirms Phase I's PR-I9 (cache-hit-rate
+Prometheus alarm) is genuinely unblocked**: `proxy_cache_hit_rate_per_session`
+exists, is registered, and is wired into all three provider SSE paths
+with real edge-case tests.
+
+**Newly noticed, not yet fixed:** `wrap_rtk_invocations_total`'s write
+path (`cassandra.cli.wrap_rtk_metrics.record_rtk_invocation`) is
+defined and exported correctly, but nothing in production `wrap.py` or
+the per-agent `wrap/` modules actually calls it — only test files
+reference it. Same class of bug PR-G2 fixed for `tokens_saved_rtk`
+(a real data-plane wire that was never connected), but for the
+invocations counter instead of the tokens-saved counter. Needs the
+wrap-session polling loop (`docs/rtk-architecture.md`'s "Polls `rtk
+gain --format json` on a 5-second memoization window") to actually
+call `record_rtk_invocation` per tool. Not yet investigated further.
 
 All of A–G have now been read against their specs (not just
 marker-grep), and every real gap found has since been fixed and
