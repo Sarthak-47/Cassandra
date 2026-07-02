@@ -18,6 +18,14 @@
 //!      embedded in a normal text field are caught by (1)/(2);
 //!      this rule catches values that the volatile-substring scan
 //!      would miss (e.g. integer trace IDs, custom slug formats).
+//!   4. **JWT-shaped tokens** (`eyJ....eyJ....<sig>`) — a bearer
+//!      token or session credential pasted into a prompt (e.g. "here's
+//!      my auth header, debug this 401") is per-request unique and
+//!      also a secret that shouldn't sit in a cached prefix at all.
+//!   5. **Long hex strings >= 32 chars** (build hashes, commit SHAs,
+//!      content-addressed cache keys) — legitimate content, but
+//!      almost always freshly generated per build/commit and thus a
+//!      cache-busting prefix element just like a timestamp or UUID.
 //!
 //! # Non-mutation invariant
 //!
@@ -76,6 +84,14 @@ pub enum VolatileKind {
     /// per-request ID needles (`request_id`, `trace_id`,
     /// `session_id`, `correlation_id`).
     IdField,
+    /// JWT shape: three `.`-separated base64url segments, the first
+    /// starting with `eyJ` (the base64url encoding of `{"`, which
+    /// every JWT header/payload begins with since both are JSON
+    /// objects).
+    Jwt,
+    /// A contiguous run of >= 32 ASCII hex digits — build hashes,
+    /// commit SHAs, content-addressed cache keys.
+    BuildHash,
 }
 
 impl VolatileKind {
@@ -87,6 +103,8 @@ impl VolatileKind {
             VolatileKind::Timestamp => "iso8601_timestamp",
             VolatileKind::Uuid => "uuid_v4",
             VolatileKind::IdField => "id_field",
+            VolatileKind::Jwt => "jwt",
+            VolatileKind::BuildHash => "build_hash",
         }
     }
 }
@@ -344,6 +362,24 @@ fn scan_string(s: &str, location: &str, out: &mut Vec<VolatileFinding>) {
             i += 36;
             continue;
         }
+        if let Some(match_len) = jwt_match_len(&bytes[i..]) {
+            out.push(VolatileFinding {
+                kind: VolatileKind::Jwt,
+                location: location.to_string(),
+                sample: truncate_sample(&s[i..i + match_len]),
+            });
+            i += match_len;
+            continue;
+        }
+        if let Some(match_len) = build_hash_match_len(&bytes[i..]) {
+            out.push(VolatileFinding {
+                kind: VolatileKind::BuildHash,
+                location: location.to_string(),
+                sample: truncate_sample(&s[i..i + match_len]),
+            });
+            i += match_len;
+            continue;
+        }
         i += 1;
     }
 }
@@ -407,6 +443,81 @@ fn looks_like_uuid_v4(window: &[u8]) -> bool {
         }
     }
     true
+}
+
+/// Is `window` base64url alphabet? (`A-Za-z0-9-_`, no padding — JWTs
+/// are unpadded base64url per RFC 7519 §3.)
+fn is_base64url(c: u8) -> bool {
+    c.is_ascii_alphanumeric() || c == b'-' || c == b'_'
+}
+
+/// If `window` starts with a JWT-shaped token, return its byte
+/// length; otherwise `None`.
+///
+/// A JWT is exactly three base64url segments separated by `.`
+/// (header.payload.signature). The header segment is the base64url
+/// encoding of a JSON object starting with `{"`, which is always
+/// `eyJ` in base64url — the cheapest strong signal to anchor on
+/// before doing the full three-segment walk. Minimum segment
+/// lengths (8/4/4) are a floor real JWTs clear by a wide margin;
+/// they exist only to reject pathological "eyJ.x.y"-shaped noise.
+fn jwt_match_len(window: &[u8]) -> Option<usize> {
+    if !window.starts_with(b"eyJ") {
+        return None;
+    }
+    let mut i = 0usize;
+    let mut dots_seen = 0u8;
+    let mut segment_len = 0usize;
+    let mut first_segment_len = 0usize;
+    let mut second_segment_len = 0usize;
+    while i < window.len() {
+        match window[i] {
+            b'.' if dots_seen < 2 => {
+                if segment_len == 0 {
+                    return None; // empty segment — not a JWT
+                }
+                dots_seen += 1;
+                if dots_seen == 1 {
+                    first_segment_len = segment_len;
+                } else {
+                    second_segment_len = segment_len;
+                }
+                segment_len = 0;
+            }
+            c if is_base64url(c) => segment_len += 1,
+            _ => break,
+        }
+        i += 1;
+    }
+    // Exactly 2 dots consumed (3 segments total) and the loop ended
+    // because the 3rd segment ran out of base64url characters (a
+    // non-b64url terminator or end of string) — a 3rd dot inside the
+    // loop is rejected above by the `dots_seen < 2` guard falling
+    // through to the `_ => break` arm.
+    if dots_seen != 2 || segment_len == 0 {
+        return None;
+    }
+    if first_segment_len < 8 || second_segment_len < 4 || segment_len < 4 {
+        return None;
+    }
+    Some(i)
+}
+
+/// If `window` starts with a run of >= 32 ASCII hex digits, return
+/// the run's byte length; otherwise `None`. Catches build hashes,
+/// commit SHAs, and content-addressed cache keys — legitimate
+/// content that's still per-build/per-commit unique and thus
+/// cache-busting when it lands in the prefix.
+fn build_hash_match_len(window: &[u8]) -> Option<usize> {
+    let mut i = 0usize;
+    while i < window.len() && window[i].is_ascii_hexdigit() {
+        i += 1;
+    }
+    if i >= 32 {
+        Some(i)
+    } else {
+        None
+    }
 }
 
 /// Does the JSON key name match one of the conventional per-request
@@ -498,6 +609,101 @@ mod tests {
         assert_eq!(findings[0].kind, VolatileKind::Uuid);
         assert_eq!(findings[0].location, "messages[0].content");
         assert_eq!(findings[0].sample, "550e8400-e29b-41d4-a716-446655440000");
+    }
+
+    #[test]
+    fn detects_jwt_shape_in_user_message() {
+        // A real (structurally, not cryptographically) JWT: base64url
+        // header.payload.signature, 3 dot-separated segments.
+        let jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.\
+                    eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.\
+                    SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+        let body = json!({
+            "messages": [
+                {"role": "user", "content": format!("auth={jwt}")},
+            ],
+        });
+        let findings = detect_volatile_content(&body, ApiKind::Anthropic);
+        assert_eq!(
+            findings.len(),
+            1,
+            "expected exactly one finding, got {findings:?}"
+        );
+        assert_eq!(findings[0].kind, VolatileKind::Jwt);
+        assert_eq!(findings[0].location, "messages[0].content");
+        assert!(findings[0]
+            .sample
+            .starts_with("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."));
+    }
+
+    #[test]
+    fn jwt_with_short_or_missing_segments_is_not_flagged() {
+        // "eyJ" alone, or eyJ-prefixed noise with implausibly short
+        // segments, must not false-positive as a JWT.
+        for noise in ["eyJ", "eyJ.a.b", "eyJhbGci.short.x", "eyJhbGciOiJIUzI1Ng"] {
+            let body = json!({"system": format!("token snippet: {noise}")});
+            let findings = detect_volatile_content(&body, ApiKind::Anthropic);
+            assert!(
+                findings.iter().all(|f| f.kind != VolatileKind::Jwt),
+                "{noise:?} must not match the JWT detector; got {findings:?}",
+            );
+        }
+    }
+
+    #[test]
+    fn detects_build_hash_in_system_prompt() {
+        // A 40-char git commit SHA (sha1 hex length).
+        let sha = "a94a8fe5ccb19ba61c4c0873d391e987982fbbd";
+        let body = json!({"system": format!("Deployed commit {sha} to prod.")});
+        let findings = detect_volatile_content(&body, ApiKind::Anthropic);
+        assert_eq!(
+            findings.len(),
+            1,
+            "expected exactly one finding, got {findings:?}"
+        );
+        assert_eq!(findings[0].kind, VolatileKind::BuildHash);
+        assert_eq!(findings[0].sample, sha);
+    }
+
+    #[test]
+    fn detects_sha256_length_build_hash() {
+        // 64-char sha256 hex — must also be caught, not just sha1-length.
+        let sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b85";
+        let body = json!({"system": format!("cache-key={sha256}")});
+        let findings = detect_volatile_content(&body, ApiKind::Anthropic);
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].kind, VolatileKind::BuildHash);
+        assert_eq!(findings[0].sample, sha256);
+    }
+
+    #[test]
+    fn short_hex_run_under_32_chars_is_not_flagged_as_build_hash() {
+        // 16 hex chars — plausible short ID, well under the 32-char floor.
+        let body = json!({"system": "session=deadbeefcafebabe, continue."});
+        let findings = detect_volatile_content(&body, ApiKind::Anthropic);
+        assert!(
+            findings.iter().all(|f| f.kind != VolatileKind::BuildHash),
+            "16-char hex run must not match build-hash detector; got {findings:?}",
+        );
+    }
+
+    #[test]
+    fn hyphenated_non_v4_hex_id_does_not_false_positive_as_build_hash() {
+        // 36-char hyphenated string that fails the UUID-v4 check (no
+        // version-4 nibble) must not ALSO get picked up piecemeal as
+        // a build hash -- hyphens break the contiguous hex run into
+        // segments far short of the 32-char floor.
+        let body = json!({
+            "messages": [{
+                "role": "user",
+                "content": "id=550e8400-e29b-01d4-a716-446655440000",
+            }],
+        });
+        let findings = detect_volatile_content(&body, ApiKind::Anthropic);
+        assert!(
+            findings.iter().all(|f| f.kind != VolatileKind::BuildHash),
+            "hyphenated hex-ish string must not match build-hash detector; got {findings:?}",
+        );
     }
 
     #[test]
