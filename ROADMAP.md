@@ -171,7 +171,7 @@ Full detail in [REALIGNMENT/](REALIGNMENT/INDEX.md).
 | C — Rust proxy paths | Port remaining handlers, byte-level SSE parser | **Verified** well-built but not actually deployed (see critical finding above) + 1 dropped feature |
 | D — Bedrock/Vertex native | Replace the currently-fake LiteLLM conversion | **Verified** genuinely native (SigV4/EventStream/ADC, real, not a LiteLLM shim) |
 | E — Cache stabilization | Deterministic tool/schema ordering | **Verified** mostly solid, 4/6 have smaller acceptance-criteria gaps (see below) |
-| F — Auth-mode policy | PAYG/OAuth/subscription-aware compression | **Verified** real security-relevant gaps — see below, don't trust "done" |
+| F — Auth-mode policy | PAYG/OAuth/subscription-aware compression | **Verified**, 1 of 2 security gaps fixed (2026-07-02) — F4 still open, see below |
 | G — RTK + observability | Broader wrap-CLI support, metrics | **Verified** strongest phase audited, 1 minor gap; unblocks Phase I PR-I9 |
 | H — Python retirement | Delete the Python proxy once Rust hits parity | Mostly not started (1/4 — only PR-H2); PR-H1 is a HIGH-RISK -15K LOC deletion, not startable yet (see below) |
 | I — Test infra | SHA-256 round-trip tests, parity gates | 1/10 landed (PR-I10, verified green in real CI); 5 more unblocked (see below) |
@@ -260,14 +260,19 @@ mid-rollout and never updated — that's what misled the first pass. What
 *does* hold up: F2's "no lossy compressors for OAuth/Subscription"
 requirement (`CompressionPolicy.max_lossy_ratio`, `live_zone_only`) is
 genuinely plumbed-but-unconsumed — no compressor reads either field.
-**F3** has a confirmed real gap: the spec explicitly requires (see
-[08-phase-F-auth-mode.md:175](REALIGNMENT/08-phase-F-auth-mode.md))
-replacing raw OAuth bearer storage with a one-way hash, but
-`cassandra/subscription/tracker.py:283` still does `self._current_token
-= raw` — verified directly, the full bearer token sits in process
-memory. TOIN's per-tenant key mechanism is real but no production call
-site threads live `auth_mode`/`model_family` in, so real observations
-still land under `"unknown"`. **F4** is the weakest: `headers.rs::
+**F3's raw-token-storage gap is fixed (2026-07-02).** The spec explicitly
+required (see [08-phase-F-auth-mode.md:175](REALIGNMENT/08-phase-F-auth-mode.md))
+replacing raw OAuth bearer storage with a one-way hash;
+`cassandra/subscription/tracker.py` previously did `self._current_token
+= raw`. Now `notify_active()` stores only `_hash_token_id(raw)` (SHA-256
++ last-4 chars) and `_maybe_poll()` always resolves a fresh token via
+`read_cached_oauth_token()` rather than reusing the cached copy — no raw
+bearer sits in process memory anymore. Verified: all 8
+`test_subscription_tracker.py` tests pass, plus a broader
+`-k subscription` sweep (105 tests, 1 unrelated pre-existing Windows-only
+failure). F3's other gap (TOIN per-tenant keying not threaded with live
+`auth_mode`/`model_family`, so observations still land under `"unknown"`)
+remains open. **F4 remains fully open:** `headers.rs::
 build_forward_request_headers` takes no `AuthMode` parameter at all
 (verified — its signature has zero mode-awareness) and is called
 unconditionally, so `X-Forwarded-*` fingerprint suppression for
@@ -277,8 +282,9 @@ also stripped unconditionally in both `anthropic.py:684` and
 actively violates the spec's "Subscription: preserve accept-encoding,
 never strip" stealth requirement. **Given Phase F's whole stated
 purpose is avoiding provider detection/flagging on OAuth and
-Subscription accounts, F3 and F4's gaps are not cosmetic — they're
-exactly the fingerprint surface the phase exists to close.**
+Subscription accounts, F4's gap is not cosmetic — it's exactly the
+fingerprint surface the phase exists to close, and is the next thing
+worth fixing here.**
 
 **Phase G spot-check result:** the strongest phase audited — heavy,
 real edge-case test coverage (NaN/infinity/aborted-stream handling in
@@ -294,10 +300,11 @@ real edge-case tests.
 
 All of A–G have now been read against their specs (not just
 marker-grep). Summary: A and D are genuinely solid. G is nearly
-solid (1 minor gap). B, C, E have real-but-survivable gaps. **F is
-the one phase that shouldn't be marked done** — its core promise
-(reduce OAuth/Subscription fingerprint surface) has two confirmed,
-unaddressed holes.
+solid (1 minor gap). B, C, E have real-but-survivable gaps. **F
+still shouldn't be marked done** — one of its two confirmed
+fingerprint-surface holes (F3's raw OAuth token storage) is now
+fixed; F4 (X-Forwarded-*/accept-encoding not auth-mode-aware) remains
+open and is the next concrete fix worth doing here.
 
 **Phase I scope, read directly from
 [11-phase-I-test-infra.md](REALIGNMENT/11-phase-I-test-infra.md)** (10
