@@ -121,11 +121,26 @@ binary is not deployed by the CLI."
 well-built and well-tested (verified directly against spec, see below)
 — but it's currently unreachable dead weight from a production-usage
 standpoint. The "76% implemented" figure measures code that exists, not
-code that's live for a `cassandra proxy` user today. This also explains
-why Phase H shows almost no progress: there's no cutover switch to even
-attempt it yet. **The highest-leverage next step for this whole rewrite
-is Phase H PR-H1** (build the `CASSANDRA_PROXY_BACKEND` switch), not
-further Rust feature work in phases that already have markers.
+code that's live for a `cassandra proxy` user today.
+
+**Correction to an earlier draft of this section:** I initially wrote
+that Phase H PR-H1 (a `CASSANDRA_PROXY_BACKEND` switch) was the
+highest-leverage next step. That undersold what PR-H1 actually is —
+read [10-phase-H-python-retirement.md](REALIGNMENT/10-phase-H-python-retirement.md)
+directly: it's not a switch, it's an outright **-15,000/+500 LOC,
+explicitly HIGH-RISK deletion** of the entire Python proxy (server,
+handlers, memory subsystem, semantic cache, batch handler — the works),
+with acceptance criteria including a canary deploy, a 24h staging
+soak with cache-hit-rate parity, and a mandated 30-day rollback image
+retention. Its own prerequisites list **"Real-traffic shadow test
+(Phase I) shows Rust ≥99.9% byte-equality vs Python"** — and Phase I
+has zero markers found in code (see below). **PR-H1 cannot responsibly
+be started before Phase I's shadow-testing infra exists**, and even
+once it can, this is exactly the kind of production-facing,
+hard-to-reverse change that needs explicit human sign-off and
+operations coordination, not autonomous execution. The actual
+highest-leverage next step is **Phase I** (shadow/canary test infra),
+which is the real gate — not H1 itself.
 
 **Correction (2026-07-02):** the original "0% started" claim below was
 wrong. It was based only on the absence of `realign-*` git branches/commits,
@@ -210,10 +225,11 @@ comments (`crates/cassandra-py/src/lib.rs:1560-1569`), since the Rust
 proxy binary isn't what `cassandra proxy` deploys.
 
 Next real step: same spot-check treatment for E–G (only A, B, C, D have
-been read against spec so far). Then, given the critical finding above,
-prioritize Phase H PR-H1 (the `CASSANDRA_PROXY_BACKEND` cutover switch)
-over further phase verification — without it, none of A–G's Rust work
-is reachable in production regardless of how complete it is.
+been read against spec so far) to know the true completion state before
+deciding anything about H. Then read
+[11-phase-I-test-infra.md](REALIGNMENT/11-phase-I-test-infra.md) to scope
+the shadow/canary testing work that actually gates H1 — that's the real
+next deliverable, not H1 itself (see the correction above for why).
 
 [12-decisions-needed.md](REALIGNMENT/12-decisions-needed.md) lists 15
 decisions the plan originally called blocking for Phase A (ICM deletion
