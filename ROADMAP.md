@@ -100,7 +100,32 @@ Actions, pip, cargo, npm) is a one-command restore from history.
 
 ---
 
-## 6. The compression-engine rewrite (REALIGNMENT) — ~76% implemented
+## 6. The compression-engine rewrite (REALIGNMENT) — ~76% implemented, but see the critical caveat below
+
+**CRITICAL FINDING (2026-07-02):** the standalone Rust proxy
+(`crates/cassandra-proxy`) that Phases C and D's work lives in is **not
+what `cassandra proxy` / `cassandra wrap` actually start**. Verified
+directly: `cassandra/cli/proxy.py`'s `proxy` command does `from
+cassandra.proxy.server import ...` — the real, deployed traffic path is
+still the Python FastAPI server (`cassandra/proxy/server.py`), not the
+Rust binary. The planned cutover mechanism
+(`CASSANDRA_PROXY_BACKEND={python|rust}`, recommended for Phase H PR-H1
+in [12-decisions-needed.md](REALIGNMENT/12-decisions-needed.md)) **does
+not exist anywhere in the codebase** — grepped, zero hits outside that
+planning doc. A comment in `crates/cassandra-py/src/lib.rs:1560-1569`
+confirms this was a known, deliberate hot-fix: a PyO3 binding was added
+to restore compression on the Python side specifically *because* "that
+binary is not deployed by the CLI."
+
+**What this means:** Phases C and D's Rust code is genuinely
+well-built and well-tested (verified directly against spec, see below)
+— but it's currently unreachable dead weight from a production-usage
+standpoint. The "76% implemented" figure measures code that exists, not
+code that's live for a `cassandra proxy` user today. This also explains
+why Phase H shows almost no progress: there's no cutover switch to even
+attempt it yet. **The highest-leverage next step for this whole rewrite
+is Phase H PR-H1** (build the `CASSANDRA_PROXY_BACKEND` switch), not
+further Rust feature work in phases that already have markers.
 
 **Correction (2026-07-02):** the original "0% started" claim below was
 wrong. It was based only on the absence of `realign-*` git branches/commits,
@@ -119,10 +144,10 @@ Full detail in [REALIGNMENT/](REALIGNMENT/INDEX.md).
 
 | Phase | What | Status |
 |---|---|---|
-| A — Lockdown | Stop the cache-busting bugs (passthrough on `/v1/messages`) | **Verified** genuinely implemented (8/8, real logic + tests, not stubs) |
-| B — Live-zone engine | Delete ~10K LOC (ICM/scoring/relevance), rebuild compression | Implemented (7/7 markers) — not yet spot-checked |
-| C — Rust proxy paths | Port remaining handlers, byte-level SSE parser | Implemented (5/5 markers) — not yet spot-checked |
-| D — Bedrock/Vertex native | Replace the currently-fake LiteLLM conversion | Implemented (5/5 markers) — not yet spot-checked |
+| A — Lockdown | Stop the cache-busting bugs (passthrough on `/v1/messages`) | **Verified** genuinely done (all 8, one spec-stale note — see below) |
+| B — Live-zone engine | Delete ~10K LOC (ICM/scoring/relevance), rebuild compression | **Verified** mostly done, 2 real gaps (relevance/ not deleted, CodeCompressor unwired — see below) |
+| C — Rust proxy paths | Port remaining handlers, byte-level SSE parser | **Verified** well-built but not actually deployed (see critical finding above) + 1 dropped feature |
+| D — Bedrock/Vertex native | Replace the currently-fake LiteLLM conversion | **Verified** genuinely native (SigV4/EventStream/ADC, real, not a LiteLLM shim) |
 | E — Cache stabilization | Deterministic tool/schema ordering | Implemented (6/6 markers) — not yet spot-checked |
 | F — Auth-mode policy | PAYG/OAuth/subscription-aware compression | Implemented (4/4 markers) — not yet spot-checked |
 | G — RTK + observability | Broader wrap-CLI support, metrics | Implemented (3/3 markers) — not yet spot-checked |
@@ -134,19 +159,61 @@ against actual code, not just grep — read the real implementation of
 each (`cache_control.rs`, `helpers.py`, `streaming.py`, `headers.rs`,
 `cache_aligner.py`, `SessionBetaTracker`, etc.) and confirmed against
 [REALIGNMENT/03-phase-A-lockdown.md](REALIGNMENT/03-phase-A-lockdown.md).
-Verdict: genuinely done, no stubs/no-ops/TODOs blocking any of them.
-Two notes: (1) several implementations live in different files/functions
-than the spec names — drift in location, not in substance; (2) PR-A1's
-"pure passthrough stub" has already been superseded by live Phase B
-compression code gated behind `CompressionMode` — the codebase is ahead
-of Phase A's literal spec text, not behind it.
+PR-A1–A7: genuinely done, real logic + real tests, no stubs/no-ops/TODOs.
+Two notes there: (1) several implementations live in different
+files/functions than the spec names — drift in location, not substance;
+(2) PR-A1's "pure passthrough stub" has already been superseded by live
+Phase B compression code gated behind `CompressionMode` — the codebase
+is ahead of Phase A's literal spec text, not behind it.
 
-Next real step: same spot-check treatment for B–G (only A has been
-read against its spec so far — B–G's "Implemented" status still rests
-on marker-grep alone, which only proves *a PR landed*, not that it
-fully satisfies its phase's spec). Then audit whether the Python proxy
-(`cassandra/proxy/`, ~19K LOC) can actually be retired now that A–G
-*claim* completion.
+**PR-A8 note (resolved, not a gap):** the spec calls for two fixes in
+`cassandra/proxy/responses_converter.py` (preserve the `phase` field,
+add an unknown-item-type warning — see
+[03-phase-A-lockdown.md:350-362](REALIGNMENT/03-phase-A-lockdown.md)),
+but that file doesn't exist. Traced it: `crates/cassandra-proxy/src/
+proxy.rs`'s `compress_openai_responses_request` (PR-C3) now handles
+`/v1/responses` natively in Rust — Phase C ported this logic off Python
+entirely, so the file's removal is a later phase superseding an earlier
+one, not a dropped requirement. The spec section is stale, not the code.
+The other three PR-A8 sub-items (SSE delta arms, bytes-buffer decode
+replacing `errors="ignore"`, Rust 413-vs-400 + upstream request-id
+capture) are genuinely implemented.
+
+**Phase B spot-check result:** 5 of 7 PRs (B2, B4, B5, B6, B7) are solid,
+real implementations with genuine tests. Two real, undocumented gaps:
+(1) **PR-B1** — `crates/cassandra-core/src/relevance/` (~1,300 LOC of
+BM25/embedding/hybrid scorers, still `pub mod relevance` in `lib.rs`,
+actively imported by SmartCrusher/TextCrusher) was never deleted despite
+the spec's "~10K LOC delete" target, and the `fastembed` ML dependency
+it needs is still live. (2) **PR-B3** — `CodeCompressor` was never wired
+into the live-zone dispatcher; `ContentType::SourceCode` is hard-coded
+to `NoOp` with an explicit `TODO(PR-B4 / Rust code-compressor port)`
+comment, and the Rust test suite was rewritten to assert the no-op
+instead of the spec's named `..._routes_to_code_compressor` test —
+**meaning source-code tool_results get zero compression today.** Neither
+gap looks like negligence (both are consistent, deliberately-coded
+no-op branches with matching tests) — reads like an unreflected scope
+cut, not a stub.
+
+**Phase C spot-check result:** C1–C3 are solid (byte-level SSE parser,
+`/v1/chat/completions`, and an unusually thorough `/v1/responses` item-type
+handler in Rust). Two real gaps: (1) **PR-C4** dropped the
+Conversations-API-awareness compression-skip feature entirely —
+`crates/cassandra-proxy/src/conversations.rs` (detecting `conversation:
+{"id": ...}` in `/v1/responses` bodies and skipping live-zone
+compression) doesn't exist anywhere, no trace in code or tests; what
+exists instead (`handlers/conversations.rs`) is an unrelated
+`/v1/conversations*` CRUD passthrough. (2) **PR-C5**'s headline claim —
+"after this PR lands, no Python code is on the `/v1/responses` request
+path" — is the critical finding above: falsified by the codebase's own
+comments (`crates/cassandra-py/src/lib.rs:1560-1569`), since the Rust
+proxy binary isn't what `cassandra proxy` deploys.
+
+Next real step: same spot-check treatment for E–G (only A, B, C, D have
+been read against spec so far). Then, given the critical finding above,
+prioritize Phase H PR-H1 (the `CASSANDRA_PROXY_BACKEND` cutover switch)
+over further phase verification — without it, none of A–G's Rust work
+is reachable in production regardless of how complete it is.
 
 [12-decisions-needed.md](REALIGNMENT/12-decisions-needed.md) lists 15
 decisions the plan originally called blocking for Phase A (ICM deletion
