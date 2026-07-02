@@ -14,6 +14,8 @@ use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 use tokio_tungstenite::tungstenite::protocol::CloseFrame as TgCloseFrame;
 use tokio_tungstenite::tungstenite::Message as TgMsg;
 
+use cassandra_core::auth_mode::classify as classify_auth_mode;
+
 use crate::headers::build_forward_request_headers;
 use crate::proxy::{join_upstream_path, AppState};
 
@@ -52,6 +54,12 @@ pub async fn ws_handler(
     // PR-A5: same strip policy as the HTTP path — operators flip both
     // simultaneously via the single `Config::strip_internal_headers` knob.
     let strip_internal_ws = state.config.strip_internal_headers.is_enabled();
+    // PR-F4: the WS path bypasses forward_http entirely (see catch_all), so
+    // it never gets the auth-mode classification forward_http does at
+    // request entry -- classify here too, matching the same fingerprint-
+    // suppression behavior on X-Forwarded-*/X-Request-Id for Subscription
+    // mode as the HTTP path.
+    let auth_mode = classify_auth_mode(req.headers());
     let forward_headers = build_forward_request_headers(
         req.headers(),
         client_addr.ip(),
@@ -59,6 +67,7 @@ pub async fn ws_handler(
         forwarded_host.as_deref(),
         &request_id,
         strip_internal_ws,
+        auth_mode,
     );
     // Sec-WebSocket-Protocol must be propagated for subprotocol negotiation.
     let subprotocols: Option<String> = req

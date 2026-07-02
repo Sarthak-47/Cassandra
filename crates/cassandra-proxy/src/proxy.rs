@@ -504,6 +504,7 @@ pub(crate) async fn forward_http(
         forwarded_host.as_deref(),
         &request_id,
         strip_internal,
+        auth_mode,
     );
     if strip_internal && pre_strip_internal_count > 0 {
         tracing::info!(

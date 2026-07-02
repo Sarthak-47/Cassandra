@@ -265,6 +265,11 @@ pub(crate) async fn forward_vertex_request(
         .get("x-forwarded-proto")
         .and_then(|v| v.to_str().ok())
         .unwrap_or("http");
+    // PR-F4: same rationale as the compression call above (PR-E3) --
+    // Vertex auth is GCP ADC, not Claude subscription OAuth, so
+    // Subscription-mode fingerprint suppression doesn't apply here.
+    // Hard-code OAuth to keep X-Forwarded-*/X-Request-Id on (matching
+    // pre-PR-F4 behavior for this path).
     let mut outgoing_headers = build_forward_request_headers(
         &headers,
         client_addr.ip(),
@@ -272,6 +277,7 @@ pub(crate) async fn forward_vertex_request(
         forwarded_host.as_deref(),
         &request_id,
         strip_internal,
+        cassandra_core::auth_mode::AuthMode::OAuth,
     );
     if !state.config.rewrite_host {
         if let Some(h) = headers.get(http::header::HOST) {

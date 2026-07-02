@@ -2,6 +2,7 @@
 //!
 //! Hop-by-hop headers per RFC 7230 §6.1 must not be forwarded.
 
+use cassandra_core::auth_mode::AuthMode;
 use http::header::{HeaderMap, HeaderName, HeaderValue};
 use std::net::IpAddr;
 
@@ -129,6 +130,13 @@ pub fn strip_internal_headers(headers: &mut HeaderMap) -> usize {
 ///     (PR-A5, fixes P5-49). Operators can disable via
 ///     `CASSANDRA_PROXY_STRIP_INTERNAL_HEADERS=disabled` for diagnostic
 ///     shadow tracing.
+///
+/// Phase F PR-F4 (fixes P5-53): the X-Forwarded-*/X-Request-Id block above
+/// is skipped entirely when `auth_mode == AuthMode::Subscription` --
+/// injecting hop-identifying headers on a request meant to look like it
+/// came directly from a subscription-bound CLI/IDE is exactly the
+/// fingerprint surface Subscription mode exists to avoid. PAYG and OAuth
+/// still get the full block; they're not stealth-sensitive.
 pub fn build_forward_request_headers(
     incoming: &HeaderMap,
     client_addr: IpAddr,
@@ -136,6 +144,7 @@ pub fn build_forward_request_headers(
     forwarded_host: Option<&str>,
     request_id: &str,
     strip_internal: bool,
+    auth_mode: AuthMode,
 ) -> HeaderMap {
     let connection_listed = connection_listed_headers(incoming);
     let mut out = HeaderMap::new();
@@ -151,20 +160,22 @@ pub fn build_forward_request_headers(
         }
         out.append(name.clone(), value.clone());
     }
-    append_xff(&mut out, client_addr);
-    set_single(
-        &mut out,
-        HeaderName::from_static("x-forwarded-proto"),
-        forwarded_proto,
-    );
-    if let Some(host) = forwarded_host {
-        set_single(&mut out, HeaderName::from_static("x-forwarded-host"), host);
+    if auth_mode != AuthMode::Subscription {
+        append_xff(&mut out, client_addr);
+        set_single(
+            &mut out,
+            HeaderName::from_static("x-forwarded-proto"),
+            forwarded_proto,
+        );
+        if let Some(host) = forwarded_host {
+            set_single(&mut out, HeaderName::from_static("x-forwarded-host"), host);
+        }
+        set_single(
+            &mut out,
+            HeaderName::from_static("x-request-id"),
+            request_id,
+        );
     }
-    set_single(
-        &mut out,
-        HeaderName::from_static("x-request-id"),
-        request_id,
-    );
     out
 }
 
@@ -264,6 +275,7 @@ mod tests {
             Some("h"),
             "req-1",
             true,
+            AuthMode::Payg,
         );
         assert!(out.get("authorization").is_some());
         assert!(out.get("x-cassandra-bypass").is_none());
@@ -281,8 +293,47 @@ mod tests {
             Some("h"),
             "req-1",
             false,
+            AuthMode::Payg,
         );
         assert!(out.get("authorization").is_some());
         assert!(out.get("x-cassandra-bypass").is_some());
+    }
+
+    #[test]
+    fn build_forward_adds_x_forwarded_for_payg_and_oauth() {
+        let incoming = HeaderMap::new();
+        for mode in [AuthMode::Payg, AuthMode::OAuth] {
+            let out = build_forward_request_headers(
+                &incoming,
+                "127.0.0.1".parse().unwrap(),
+                "http",
+                Some("h"),
+                "req-1",
+                true,
+                mode,
+            );
+            assert!(out.get("x-forwarded-for").is_some(), "mode={mode:?}");
+            assert!(out.get("x-forwarded-proto").is_some(), "mode={mode:?}");
+            assert!(out.get("x-forwarded-host").is_some(), "mode={mode:?}");
+            assert!(out.get("x-request-id").is_some(), "mode={mode:?}");
+        }
+    }
+
+    #[test]
+    fn build_forward_skips_x_forwarded_for_subscription() {
+        let incoming = HeaderMap::new();
+        let out = build_forward_request_headers(
+            &incoming,
+            "127.0.0.1".parse().unwrap(),
+            "http",
+            Some("h"),
+            "req-1",
+            true,
+            AuthMode::Subscription,
+        );
+        assert!(out.get("x-forwarded-for").is_none());
+        assert!(out.get("x-forwarded-proto").is_none());
+        assert!(out.get("x-forwarded-host").is_none());
+        assert!(out.get("x-request-id").is_none());
     }
 }
