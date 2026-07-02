@@ -162,6 +162,16 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PY_VERSION }}
+      # tests/test_release_workflows.py shells out to `cargo tree` (e.g.
+      # test_no_native_tls_in_wheel_build_tree) to audit the dependency
+      # graph, even though this job only installs the prebuilt wheel and
+      # never compiles Rust itself. Without a toolchain, that subprocess
+      # fails with something other than "did not match any packages" and
+      # the assertion trips on an empty stdout diff.
+      - uses: dtolnay/rust-toolchain@1.96.0
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
 
       - name: Cache pip
         uses: actions/cache@v5

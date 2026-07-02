@@ -177,7 +177,8 @@ def test_no_native_tls_in_wheel_build_tree() -> None:
         assert not_in_tree, (
             f"native-tls is back in {crate}'s build tree — likely some "
             f"crate's `default-features = true` re-enabled native-tls "
-            f"transitively:\n{result.stdout}"
+            f"transitively (or `cargo` is unavailable/misconfigured in "
+            f"this job):\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}"
         )
 
 
