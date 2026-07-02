@@ -511,4 +511,57 @@ mod tests {
             "deeply-nested keys must be sorted alphabetically; got: {serialized}"
         );
     }
+
+    /// PR-E2's second acceptance criterion (07-phase-E-cache-stabilization.md:90):
+    /// "Snapshot test on a real production tool schema... pin the sorted
+    /// bytes." Uses `memory_save`'s real `input_schema` -- genuinely
+    /// shipped in `cassandra/proxy/memory_tool_adapter.py`'s
+    /// `ANTHROPIC_CUSTOM_TOOLS` and already pinned byte-for-byte as a
+    /// golden file by PR-I8 (`tests/golden/tool_defs/
+    /// memory_save_anthropic.json`), so this test re-derives its input
+    /// from the SAME source of truth rather than a hand-copied literal
+    /// that could drift out of sync with it. Unlike the synthetic tests
+    /// above (which each isolate one property of the sort), this one
+    /// exercises a real schema with multiple sibling properties genuinely
+    /// out of alphabetic order, an array-of-objects (`extracted_entities`,
+    /// `extracted_relationships`) whose nested `properties` also need
+    /// recursive sorting, and a `required` array whose element order
+    /// must NOT be touched by the sort.
+    ///
+    /// The expected bytes were generated once by running
+    /// `sort_schema_keys_recursive` over the real schema and reviewing
+    /// the output (not hand-transcribed) -- this is the pin; a future
+    /// change to the sort algorithm that alters the output shape must
+    /// update this literal deliberately, which is the point of a
+    /// regression-locking snapshot test.
+    #[test]
+    fn snapshot_real_production_schema_memory_save() {
+        let mut value: Value = serde_json::from_str(include_str!(
+            "../../../../tests/golden/tool_defs/memory_save_anthropic.json"
+        ))
+        .expect("golden fixture is valid JSON");
+        let schema = value
+            .get_mut("input_schema")
+            .expect("golden fixture has an input_schema");
+        sort_schema_keys_recursive(schema);
+        let sorted_bytes = serde_json::to_string(schema).unwrap();
+        let expected = r#"{"properties":{"content":{"description":"The information to remember. Be specific and self-contained.","type":"string"},"entities":{"description":"Entity names referenced in this memory.","items":{"type":"string"},"type":"array"},"extracted_entities":{"description":"Pre-extracted entities with types.","items":{"properties":{"entity":{"type":"string"},"entity_type":{"type":"string"}},"required":["entity","entity_type"],"type":"object"},"type":"array"},"extracted_relationships":{"description":"Pre-extracted relationships for graph storage.","items":{"properties":{"destination":{"type":"string"},"relationship":{"type":"string"},"source":{"type":"string"}},"required":["source","relationship","destination"],"type":"object"},"type":"array"},"facts":{"description":"Pre-extracted discrete facts for efficient storage.","items":{"type":"string"},"type":"array"},"importance":{"description":"Importance score from 0.0 (low) to 1.0 (critical).","maximum":1.0,"minimum":0.0,"type":"number"}},"required":["content","importance"],"type":"object"}"#;
+        assert_eq!(
+            sorted_bytes, expected,
+            "sorted bytes of the real memory_save schema drifted from the pinned snapshot"
+        );
+
+        // The two `required` arrays (top-level and the nested
+        // extracted_relationships one) preserve their original element
+        // order -- arrays are never reordered, only objects.
+        assert!(
+            expected.contains(r#""required":["content","importance"]"#),
+            "top-level required array order must be preserved"
+        );
+        assert!(
+            expected.contains(r#""required":["source","relationship","destination"]"#),
+            "nested required array order must be preserved even though its \
+             sibling `properties` object WAS reordered"
+        );
+    }
 }
