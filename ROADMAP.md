@@ -323,7 +323,7 @@ landed; zero `PR-I*` markers anywhere in code):
 
 | PR | What | Risk | Blocked by | Ready now? |
 |---|---|---|---|---|
-| I1 | SHA-256 byte-faithful round-trip on real payload — "the single most important regression test for cache safety" | Low | PR-A1 | **Yes** |
+| I1 | SHA-256 byte-faithful round-trip on real payload — "the single most important regression test for cache safety" | Low | PR-A1 | **Done** (2026-07-02) |
 | I2 | SSE corner-case fixtures + 10K-case fuzz/proptest | Low | PR-C1 | **Yes** |
 | I3 | Property tests for compression invariants (determinism, idempotence, token-non-increasing, position/frozen-prefix preservation) | Low | PR-B4 | **Yes** |
 | I4 | Real-traffic shadow test, Python vs Rust, 10K requests, gates Phase H | Medium | PR-A1...PR-G3 (all of A–G) | No — needs G verified first |
@@ -344,14 +344,30 @@ genuinely runs `rtk init --global --auto-patch` via `register_claude_hooks`
 — that's where the assertion landed. First Phase I PR to actually exist
 in code.
 
-Five PRs (I1, I2, I3, I7, I8, I9 — six, correcting the count now that
-E/F/G are verified) are low-risk, well-specified, and unblocked right
-now — genuinely good next work, in contrast to H1 which cannot start
-yet. I4 (the shadow test that actually gates H1) is still not
-realistically startable: Phase F's confirmed fingerprint-surface gaps
-(raw OAuth token storage, unconditional X-Forwarded-*/accept-encoding)
-should probably be fixed before running a shadow test that's supposed
-to validate OAuth/Subscription-safe behavior.
+**PR-I1 landed (2026-07-02)**, verified green in real CI (`rust.yml`'s
+`test (ubuntu)` job, both the full `cargo test --workspace` step and a
+new named `cargo test -- byte-faithful gate (PR-I1)` step for fast-fail
+visibility). Much of the underlying coverage already existed scattered
+across phases (PR-A1's Anthropic passthrough test, Phase C's chat/
+responses dispatcher byte-equality assertions, Python's existing
+`test_passthrough_no_mutation_byte_equal_sha256`) — what was missing was
+the single canonical entry point the spec asks for, plus OpenAI-shaped
+recorded fixtures to match the existing Anthropic one. Added
+`crates/cassandra-proxy/tests/integration_byte_faithful.rs` (the 4
+spec-named tests), two new fixtures (`openai_chat_completions_real.json`,
+`openai_responses_real.json` — tool_calls, image content blocks, V4A
+patch, local_shell_call, reasoning, compaction), and a `make
+test-byte-faithful` target.
+
+Remaining unblocked, low-risk Phase I work: **I2, I3, I7, I8** (SSE
+fuzz fixtures, compression-invariant property tests, cache-hot-zone
+non-mutation tests, tool-def byte-stability snapshots) and **I9**
+(cache-hit-rate Prometheus alarm — confirmed unblocked once G was
+verified). I4 (the shadow test that actually gates H1) is likely
+realistic to attempt now that Phase F's fingerprint-surface gaps (raw
+OAuth token storage, unconditional X-Forwarded-*) are fixed — it was
+specifically those gaps that made an OAuth/Subscription-safety shadow
+test premature before.
 
 [12-decisions-needed.md](REALIGNMENT/12-decisions-needed.md) lists 15
 decisions the plan originally called blocking for Phase A (ICM deletion
