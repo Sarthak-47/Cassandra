@@ -1021,6 +1021,14 @@ class ContentRouter(Transform):
         # Same pattern the existing ``_runtime_target_ratio`` /
         # ``_runtime_kompress_model`` fields below use.
         self._runtime_compression_policy: Any = None
+        # Phase F PR-F3: per-request auth_mode/model_family, captured
+        # by ``apply()`` from kwargs and read by ``_record_to_toin`` so
+        # TOIN patterns key on ``(auth_mode, model_family,
+        # structure_hash)`` instead of silently falling back to
+        # ``"unknown"`` for every observation. Same None-default
+        # rationale as ``_runtime_compression_policy`` above.
+        self._runtime_auth_mode: str | None = None
+        self._runtime_model_family: str | None = None
 
         self._cache = CompressionCache()
 
@@ -1099,6 +1107,8 @@ class ContentRouter(Transform):
                 compressed_tokens=compressed_tokens,
                 strategy=strategy.value,
                 query_context=context if context else None,
+                auth_mode=self._runtime_auth_mode,
+                model_family=self._runtime_model_family,
             )
 
             logger.debug(
@@ -1502,6 +1512,15 @@ class ContentRouter(Transform):
                     crusher = self._get_smart_crusher()
                     if crusher:
                         compressor_name = type(crusher).__name__
+                        # Phase F PR-F3: this crusher instance is
+                        # lazily created once and reused across
+                        # requests (`_get_smart_crusher` caches it on
+                        # `self`), so it never goes through its own
+                        # `apply()` here -- propagate the current
+                        # request's TOIN keying context onto it before
+                        # every direct `crush()` call.
+                        crusher._runtime_auth_mode = self._runtime_auth_mode
+                        crusher._runtime_model_family = self._runtime_model_family
                         result = crusher.crush(content, query=context, bias=bias)
                         compressed, compressed_tokens = (
                             result.compressed,
@@ -2476,6 +2495,17 @@ class ContentRouter(Transform):
         # pass a policy — ``_record_to_toin`` treats that as "no gate"
         # to preserve pre-F2.2 behaviour for non-proxy callers.
         self._runtime_compression_policy = kwargs.get("compression_policy")
+        # Phase F PR-F3: capture the per-request TOIN keying context.
+        # ``auth_mode`` arrives as a plain string kwarg (the proxy
+        # handlers pass ``request.state.auth_mode.value``); no named
+        # ``Pipeline.apply`` parameter carries it, so it flows through
+        # ``**kwargs`` like ``compression_policy`` does.
+        # ``model_family`` is injected by ``Pipeline.apply`` itself
+        # (see pipeline.py) since ``model`` is a named parameter there,
+        # not part of kwargs, and this is the only place downstream
+        # that needs it.
+        self._runtime_auth_mode = kwargs.get("auth_mode")
+        self._runtime_model_family = kwargs.get("model_family")
 
         tokens_before = sum(tokenizer.count_text(str(m.get("content", ""))) for m in messages)
         context = kwargs.get("context", "")

@@ -330,6 +330,15 @@ class SmartCrusher(Transform):
         # ``_runtime_target_ratio`` / ``_runtime_kompress_model``
         # fields in ContentRouter.
         self._runtime_compression_policy: Any = None
+        # Phase F PR-F3: per-request auth_mode/model_family for TOIN's
+        # ``(auth_mode, model_family, structure_hash)`` aggregation key.
+        # Same None-default rationale as ``_runtime_compression_policy``
+        # above; also propagated in from ContentRouter's own runtime
+        # state when this instance is invoked via the lazy
+        # ``_get_smart_crusher()`` delegation path rather than its own
+        # ``apply()`` (see ContentRouter._compress_pure).
+        self._runtime_auth_mode: str | None = None
+        self._runtime_model_family: str | None = None
 
         # Build the Rust crusher with every field from the Python
         # config, plus the relevance_threshold default (0.3) — the
@@ -707,6 +716,8 @@ class SmartCrusher(Transform):
                 strategy=strategy,
                 query_context=query_context if query_context else None,
                 items=items[:5],  # Sample for field-level learning
+                auth_mode=self._runtime_auth_mode,
+                model_family=self._runtime_model_family,
             )
         except ImportError:
             # TOIN module not installed in this build — disable for
@@ -988,6 +999,13 @@ class SmartCrusher(Transform):
         # apply callers in tests) — ``_record_to_toin`` treats that
         # as "no gate", matching pre-F2.2 behaviour.
         self._runtime_compression_policy = kwargs.get("compression_policy")
+        # Phase F PR-F3: same kwargs-capture pattern as
+        # ``_runtime_compression_policy`` above, for TOIN's aggregation
+        # key. See ContentRouter.apply() for why ``auth_mode`` is a
+        # plain kwarg while ``model_family`` is injected upstream by
+        # Pipeline.apply.
+        self._runtime_auth_mode = kwargs.get("auth_mode")
+        self._runtime_model_family = kwargs.get("model_family")
 
         query_context = self._extract_context_from_messages(result_messages)
         crushed_count = 0

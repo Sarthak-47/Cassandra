@@ -1060,7 +1060,17 @@ class AnthropicHandlerMixin(ProxyHandlerHost):
                     # (token / non-cache / cache-delta) see the same policy.
                     from cassandra.transforms.compression_policy import resolve_policy
 
-                    compression_policy = resolve_policy(getattr(request.state, "auth_mode", None))
+                    _auth_mode_obj = getattr(request.state, "auth_mode", None)
+                    compression_policy = resolve_policy(_auth_mode_obj)
+                    # Phase F PR-F3: raw auth_mode string for TOIN's
+                    # (auth_mode, model_family, structure_hash)
+                    # aggregation key -- passed alongside
+                    # compression_policy at every pipeline.apply call
+                    # site below so ContentRouter/SmartCrusher's TOIN
+                    # observations stop landing under "unknown".
+                    _auth_mode_for_toin = (
+                        _auth_mode_obj.value if _auth_mode_obj is not None else None
+                    )
                     from cassandra.ccr.tool_injection import CCR_TOOL_NAME
 
                     existing_tool_names = {
@@ -1142,6 +1152,7 @@ class AnthropicHandlerMixin(ProxyHandlerHost):
                                         biases=biases,
                                         request_id=request_id,
                                         compression_policy=compression_policy,
+                                        auth_mode=_auth_mode_for_toin,
                                         **proxy_pipeline_kwargs(self.config),
                                     ),
                                     lambda bg_result: comp_cache.update_from_result(
@@ -1174,6 +1185,7 @@ class AnthropicHandlerMixin(ProxyHandlerHost):
                                             biases=biases,
                                             request_id=request_id,
                                             compression_policy=compression_policy,
+                                            auth_mode=_auth_mode_for_toin,
                                             **proxy_pipeline_kwargs(self.config),
                                         ),
                                         timeout=COMPRESSION_TIMEOUT_SECONDS,
@@ -1224,6 +1236,7 @@ class AnthropicHandlerMixin(ProxyHandlerHost):
                                         biases=biases,
                                         request_id=request_id,
                                         compression_policy=compression_policy,
+                                        auth_mode=_auth_mode_for_toin,
                                         **proxy_pipeline_kwargs(self.config),
                                     ),
                                     timeout=COMPRESSION_TIMEOUT_SECONDS,
@@ -1268,6 +1281,7 @@ class AnthropicHandlerMixin(ProxyHandlerHost):
                                             biases=biases,
                                             request_id=request_id,
                                             compression_policy=compression_policy,
+                                            auth_mode=_auth_mode_for_toin,
                                             **proxy_pipeline_kwargs(self.config),
                                         ),
                                         timeout=COMPRESSION_TIMEOUT_SECONDS,

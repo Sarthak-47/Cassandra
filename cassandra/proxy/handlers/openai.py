@@ -1946,7 +1946,12 @@ class OpenAIHandlerMixin(ProxyHandlerHost):
                 # in handlers/anthropic.py.
                 from cassandra.transforms.compression_policy import resolve_policy
 
-                compression_policy = resolve_policy(getattr(request.state, "auth_mode", None))
+                _auth_mode_obj = getattr(request.state, "auth_mode", None)
+                compression_policy = resolve_policy(_auth_mode_obj)
+                # Phase F PR-F3: raw auth_mode string for TOIN's
+                # (auth_mode, model_family, structure_hash) aggregation
+                # key -- see the equivalent block in handlers/anthropic.py.
+                _auth_mode_for_toin = _auth_mode_obj.value if _auth_mode_obj is not None else None
 
                 if is_token_mode(self.config.mode):
                     comp_cache = self._get_compression_cache(openai_session_id)
@@ -1966,6 +1971,7 @@ class OpenAIHandlerMixin(ProxyHandlerHost):
                             frozen_message_count=openai_frozen_count,
                             biases=_hook_biases,
                             compression_policy=compression_policy,
+                            auth_mode=_auth_mode_for_toin,
                         ),
                         timeout=COMPRESSION_TIMEOUT_SECONDS,
                     )
@@ -1990,6 +1996,7 @@ class OpenAIHandlerMixin(ProxyHandlerHost):
                             frozen_message_count=openai_frozen_count,
                             biases=_hook_biases,
                             compression_policy=compression_policy,
+                            auth_mode=_auth_mode_for_toin,
                         ),
                         timeout=COMPRESSION_TIMEOUT_SECONDS,
                     )

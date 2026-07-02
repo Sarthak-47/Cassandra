@@ -237,6 +237,18 @@ class TransformPipeline:
         waste_signal_token_limit = int(
             kwargs.pop("waste_signal_token_limit", MAX_WASTE_SIGNAL_DETECTION_TOKENS)
         )
+        # Phase F PR-F3: `model` is a named parameter here, not part of
+        # `**kwargs`, so it never reaches transforms' `apply(**kwargs)`
+        # calls below unless we inject it ourselves. TOIN's per-tenant
+        # aggregation key is `(auth_mode, model_family, structure_hash)`
+        # (see `cassandra/telemetry/toin.py`); this is the one place in
+        # the call chain that has the real model string in scope, so
+        # compute the family once here rather than duplicating the
+        # mapping at every `pipeline.apply(...)` call site. `setdefault`
+        # lets a caller override it explicitly (tests do).
+        from ..proxy.output_savings import model_family as _model_family_of
+
+        kwargs.setdefault("model_family", _model_family_of(model))
         tokenizer = self._get_tokenizer(model)
         provider_name = self._provider_name()
 
