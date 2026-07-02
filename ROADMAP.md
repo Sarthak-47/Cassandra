@@ -171,7 +171,7 @@ Full detail in [REALIGNMENT/](REALIGNMENT/INDEX.md).
 | C — Rust proxy paths | Port remaining handlers, byte-level SSE parser | **Verified** well-built but not actually deployed (see critical finding above) + 1 dropped feature |
 | D — Bedrock/Vertex native | Replace the currently-fake LiteLLM conversion | **Verified** genuinely native (SigV4/EventStream/ADC, real, not a LiteLLM shim) |
 | E — Cache stabilization | Deterministic tool/schema ordering | **Verified** mostly solid, 4/6 have smaller acceptance-criteria gaps (see below) |
-| F — Auth-mode policy | PAYG/OAuth/subscription-aware compression | **Verified**, 1 of 2 security gaps fixed (2026-07-02) — F4 still open, see below |
+| F — Auth-mode policy | PAYG/OAuth/subscription-aware compression | **Verified**, both confirmed security gaps (F3, F4) fixed (2026-07-02) — 1 unassigned accept-encoding item remains, see below |
 | G — RTK + observability | Broader wrap-CLI support, metrics | **Verified** strongest phase audited, 1 minor gap; unblocks Phase I PR-I9 |
 | H — Python retirement | Delete the Python proxy once Rust hits parity | Mostly not started (1/4 — only PR-H2); PR-H1 is a HIGH-RISK -15K LOC deletion, not startable yet (see below) |
 | I — Test infra | SHA-256 round-trip tests, parity gates | 1/10 landed (PR-I10, verified green in real CI); 5 more unblocked (see below) |
@@ -272,19 +272,27 @@ bearer sits in process memory anymore. Verified: all 8
 `-k subscription` sweep (105 tests, 1 unrelated pre-existing Windows-only
 failure). F3's other gap (TOIN per-tenant keying not threaded with live
 `auth_mode`/`model_family`, so observations still land under `"unknown"`)
-remains open. **F4 remains fully open:** `headers.rs::
-build_forward_request_headers` takes no `AuthMode` parameter at all
-(verified — its signature has zero mode-awareness) and is called
-unconditionally, so `X-Forwarded-*` fingerprint suppression for
-Subscription mode doesn't exist on the Rust path. `accept-encoding` is
-also stripped unconditionally in both `anthropic.py:684` and
-`openai.py:1714` with no auth-mode check (verified directly) — this
-actively violates the spec's "Subscription: preserve accept-encoding,
-never strip" stealth requirement. **Given Phase F's whole stated
-purpose is avoiding provider detection/flagging on OAuth and
-Subscription accounts, F4's gap is not cosmetic — it's exactly the
-fingerprint surface the phase exists to close, and is the next thing
-worth fixing here.**
+remains open. **F4 is fixed (2026-07-02).** Added an `AuthMode`
+parameter to `headers.rs::build_forward_request_headers`, gated the
+whole `X-Forwarded-*`/`X-Request-Id` injection block on `auth_mode !=
+Subscription`, and threaded the already-classified `auth_mode` through
+all three real call sites (`proxy.rs::forward_http` had it in scope
+already; `websocket.rs::ws_handler` bypassed classification entirely
+and needed it added; `vertex/raw_predict.rs` hard-codes `OAuth`,
+matching an existing PR-E3 rationale that Vertex uses GCP ADC tokens,
+not Claude subscription auth). Added the three spec-named integration
+tests (`payg_adds_xfwd`, `oauth_adds_xfwd`, `subscription_no_xfwd`) plus
+2 new unit tests; verified green on real CI (`rust.yml`'s `test
+(ubuntu)` job: `cargo fmt --check`, `cargo clippy`, `cargo test` all
+passed), not just locally. **One related gap remains, separate from
+PR-F4's explicit scope:** `accept-encoding` is still stripped
+unconditionally in both `anthropic.py:684` and `openai.py:1714` with no
+auth-mode check — this violates the Phase F acceptance summary's
+"Subscription: preserve accept-encoding, never strip" line, but that
+line isn't assigned to any single PR-F<n> in the spec text (it may have
+been intended for F2 or F4 and just never got a file/line assignment,
+or dropped entirely) — worth a closer read of the spec before fixing,
+since it's unclear which PR owns it.
 
 **Phase G spot-check result:** the strongest phase audited — heavy,
 real edge-case test coverage (NaN/infinity/aborted-stream handling in
@@ -300,11 +308,13 @@ real edge-case tests.
 
 All of A–G have now been read against their specs (not just
 marker-grep). Summary: A and D are genuinely solid. G is nearly
-solid (1 minor gap). B, C, E have real-but-survivable gaps. **F
-still shouldn't be marked done** — one of its two confirmed
-fingerprint-surface holes (F3's raw OAuth token storage) is now
-fixed; F4 (X-Forwarded-*/accept-encoding not auth-mode-aware) remains
-open and is the next concrete fix worth doing here.
+solid (1 minor gap). B, C, E have real-but-survivable gaps. **F's two
+confirmed fingerprint-surface holes (F3's raw OAuth token storage, F4's
+unconditional X-Forwarded-*/X-Request-Id) are both fixed as of
+2026-07-02** — F can be considered trustworthy now, modulo the small
+unassigned accept-encoding item noted above and F3's still-open TOIN
+per-tenant-keying gap (neither is a fingerprint-surface security hole
+like F3/F4 were).
 
 **Phase I scope, read directly from
 [11-phase-I-test-infra.md](REALIGNMENT/11-phase-I-test-infra.md)** (10
