@@ -21,12 +21,16 @@ def main() -> int:
     try:
         from huggingface_hub import snapshot_download
     except ImportError:
+        # Not every test shard installs the `ml`/`relevance` extra (the base
+        # `[dev]` install doesn't pull huggingface_hub) -- if it's not
+        # installed, nothing in this job can reach the model anyway, so
+        # there's nothing to verify. That's different from "installed but
+        # the cache is cold," which IS an error (handled below).
         print(
-            "huggingface_hub is not installed — install it before calling "
-            "this script (the prefetch-model / test jobs do this already).",
-            file=sys.stderr,
+            "huggingface_hub not installed — this job doesn't need HF model "
+            "access, skipping cache verification."
         )
-        return 1
+        return 0
 
     try:
         path = snapshot_download(MODEL_ID, local_files_only=True)
