@@ -58,6 +58,11 @@ langchain = [
 ]
 agno = ["agno>=1.0", "openai>=1.0", "tiktoken>=0.7"]
 strands = ["strands-agents>=0.1"]
+# Local memory-stack sidecars (.devcontainer/memory-stack): Qdrant vector
+# store + Neo4j graph store via mem0, driving cassandra/memory/backends/
+# direct_mem0.py and mem0.py's lazy `from mem0 import Memory` /
+# `from qdrant_client import QdrantClient` / `from neo4j import GraphDatabase`.
+memory-stack = ["mem0ai>=0.1", "qdrant-client>=1.9", "neo4j>=5.19"]
 evals = [
     "datasets>=2.18",
     "numpy>=1.24",
@@ -69,6 +74,7 @@ dev = [
     "pytest-cov>=4.1",
     "ruff==0.15.17",
     "mypy==1.20.2",
+    "pre-commit>=3.7",
 ]
 all = [
     "cassandra-ai[proxy,ml,langchain,agno,strands,evals]",
