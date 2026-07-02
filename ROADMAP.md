@@ -171,7 +171,7 @@ Full detail in [REALIGNMENT/](REALIGNMENT/INDEX.md).
 | C — Rust proxy paths | Port remaining handlers, byte-level SSE parser | **Verified** well-built but not actually deployed (see critical finding above) + 1 dropped feature |
 | D — Bedrock/Vertex native | Replace the currently-fake LiteLLM conversion | **Verified** genuinely native (SigV4/EventStream/ADC, real, not a LiteLLM shim) |
 | E — Cache stabilization | Deterministic tool/schema ordering | **Verified** mostly solid, 1/6 has a smaller acceptance-criteria gap (E2, E5, E6 fixed 2026-07-02, see below) |
-| F — Auth-mode policy | PAYG/OAuth/subscription-aware compression | **Verified**, all confirmed fingerprint-surface gaps (F3, F4, accept-encoding) fixed (2026-07-02) — see below |
+| F — Auth-mode policy | PAYG/OAuth/subscription-aware compression | **Verified, fully closed** — every gap found (F2 accept-encoding, F3 raw token + TOIN keying, F4) fixed (2026-07-02) — see below |
 | G — RTK + observability | Broader wrap-CLI support, metrics | **Verified** strongest phase audited, 1 minor gap; unblocks Phase I PR-I9 |
 | H — Python retirement | Delete the Python proxy once Rust hits parity | Mostly not started (1/4 — only PR-H2); PR-H1 is a HIGH-RISK -15K LOC deletion, not startable yet (see below) |
 | I — Test infra | SHA-256 round-trip tests, parity gates | 7/10 landed (I1, I2, I3, I7, I8, I9, I10 — all verified green in real CI); I5/I6 blocked on B3's CodeCompressor gap, I4 needs Phase A-G fully verified first (see below) |
@@ -301,9 +301,31 @@ replacing raw OAuth bearer storage with a one-way hash;
 bearer sits in process memory anymore. Verified: all 8
 `test_subscription_tracker.py` tests pass, plus a broader
 `-k subscription` sweep (105 tests, 1 unrelated pre-existing Windows-only
-failure). F3's other gap (TOIN per-tenant keying not threaded with live
-`auth_mode`/`model_family`, so observations still land under `"unknown"`)
-remains open. **F4 is fixed (2026-07-02).** Added an `AuthMode`
+failure). **F3's other gap — TOIN per-tenant keying — is also fixed
+(2026-07-02).** TOIN's `(auth_mode, model_family, structure_hash)`
+aggregation key machinery was already real (Phase B PR-B5), but every
+call site (`ContentRouter._record_to_toin`, `SmartCrusher`'s own)
+called `record_compression()` without passing either value, so every
+observation silently landed under `"unknown"`. Threaded both through
+the same kwargs-capture mechanism F2.2 already established for
+`compression_policy`: `pipeline.py` computes `model_family` once (the
+only place `model` is a named parameter rather than a kwarg, via the
+existing `cassandra.proxy.output_savings.model_family()` mapper) and
+injects it into kwargs; `content_router.py`/`smart_crusher.py` capture
+`auth_mode`/`model_family` from kwargs in `apply()` and pass them into
+`record_compression()`; `anthropic.py`/`openai.py`'s 6
+`compression_policy=compression_policy` call sites now also pass
+`auth_mode=` (the raw `AuthMode.value` string already classified at
+request entry). Also propagates the context onto the lazily-cached
+SmartCrusher instance ContentRouter delegates to directly via
+`crush()` (a separate dispatch path that bypasses SmartCrusher's own
+`apply()`). Deliberately left F2.2's `toin_read_only` write-gate
+untouched — a different, already-documented gap on the same delegated
+path, out of this fix's scope. 9 new tests in
+`tests/test_toin_auth_mode_keying.py`; verified green on real CI
+(`ci.yml`'s `lint` + `test` jobs — the first run's `prefetch-model` job
+hit a transient HuggingFace 429 rate-limit unrelated to this change,
+confirmed via `gh run rerun --failed` succeeding). **F4 is fixed (2026-07-02).** Added an `AuthMode`
 parameter to `headers.rs::build_forward_request_headers`, gated the
 whole `X-Forwarded-*`/`X-Request-Id` injection block on `auth_mode !=
 Subscription`, and threaded the already-classified `auth_mode` through
@@ -346,13 +368,12 @@ real edge-case tests.
 
 All of A–G have now been read against their specs (not just
 marker-grep). Summary: A and D are genuinely solid. G is nearly
-solid (1 minor gap). B, C, E have real-but-survivable gaps. **F's
-fingerprint-surface holes (F3's raw OAuth token storage, F4's
-unconditional X-Forwarded-*/X-Request-Id, and PR-F2's
-accept-encoding strip) are all fixed as of 2026-07-02** — F can be
-considered trustworthy now, modulo F3's still-open TOIN
-per-tenant-keying gap (not a fingerprint-surface security hole like
-the other three were).
+solid (1 minor gap). B, C, E have real-but-survivable gaps. **Phase F
+is now fully closed as of 2026-07-02** — every gap found in the
+initial audit (F3's raw OAuth token storage AND its TOIN
+per-tenant-keying gap, F4's unconditional X-Forwarded-*/X-Request-Id,
+and PR-F2's accept-encoding strip) is fixed and CI-verified. F can be
+considered fully trustworthy now.
 
 **Phase I scope, read directly from
 [11-phase-I-test-infra.md](REALIGNMENT/11-phase-I-test-infra.md)** (10
