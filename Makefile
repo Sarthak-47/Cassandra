@@ -1,4 +1,4 @@
-.PHONY: test-parity ci-precheck build-wheel lint fmt test test-rust test-python
+.PHONY: test-parity test-byte-faithful ci-precheck build-wheel lint fmt test test-rust test-python
 
 # Rust-vs-Python parity harness (crates/cassandra-parity). Compares the two
 # implementations against recorded fixtures under tests/parity/fixtures;
@@ -6,6 +6,13 @@
 # fails the build. See REALIGNMENT/11-phase-I-test-infra.md PR-I6.
 test-parity:
 	cargo run -p cassandra-parity --bin parity-run -- run --fixtures tests/parity/fixtures
+
+# SHA-256 byte-faithful round-trip gate (REALIGNMENT/11-phase-I-test-infra.md
+# PR-I1) -- "the single most important regression test for cache safety."
+# Runs quickly (<5s); safe as a per-PR CI gate independent of the full suite.
+test-byte-faithful:
+	cargo test -p cassandra-proxy --test integration_byte_faithful
+	pytest tests/test_proxy_byte_faithful_forwarding.py -k byte_equal_sha256
 
 # Pre-push gate. Fast, local-only checks -- run this before every push to
 # main (per REALIGNMENT/INDEX.md convention). Does not run the full pytest

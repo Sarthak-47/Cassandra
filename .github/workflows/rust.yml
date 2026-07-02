@@ -60,6 +60,19 @@ jobs:
         run: cargo clippy --workspace -- -D warnings
       - name: cargo test
         run: cargo test --workspace
+      # REALIGNMENT/11-phase-I-test-infra.md PR-I1: named, isolated
+      # per-PR gate for the byte-faithful invariant so a cache-hit-rate
+      # regression fails loudly and specifically here, not just as one
+      # of thousands of assertions inside the `cargo test --workspace`
+      # step above (which already runs this file too -- this step is
+      # about fast-fail visibility, not additional coverage). The
+      # Python-side half of `make test-byte-faithful`
+      # (tests/test_proxy_byte_faithful_forwarding.py) runs in ci.yml's
+      # main pytest job, which already has Python + the built wheel;
+      # duplicating that setup here just to re-run one test isn't worth
+      # the extra job weight.
+      - name: cargo test -- byte-faithful gate (PR-I1)
+        run: cargo test -p cassandra-proxy --test integration_byte_faithful
 
   wheels:
     name: wheels (${{ matrix.target }})
