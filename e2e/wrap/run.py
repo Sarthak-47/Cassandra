@@ -398,7 +398,18 @@ def start_proxy(port: int, env: dict[str, str]) -> subprocess.Popen[str]:
         encoding="utf-8",
         errors="replace",
     )
-    wait_for_http(f"http://127.0.0.1:{port}/health", timeout=30)
+    try:
+        wait_for_http(f"http://127.0.0.1:{port}/health", timeout=30)
+    except Exception:
+        # The health check failure alone doesn't say *why* -- stdout/stderr
+        # are merged into proc.stdout (PIPE) but nothing reads it unless we
+        # do it here, so a crash-on-startup previously surfaced as a bare
+        # "Connection refused" with the actual traceback silently discarded.
+        if proc.poll() is None:
+            proc.kill()
+        output, _ = proc.communicate(timeout=5)
+        log(f"cassandra proxy failed to become healthy. Process output:\n{output}")
+        raise
     return proc
 
 
