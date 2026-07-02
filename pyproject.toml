@@ -75,6 +75,19 @@ dev = [
     "ruff==0.15.17",
     "mypy==1.20.2",
     "pre-commit>=3.7",
+    # CI's `test` job installs only `[dev]` and runs the full tests/ suite
+    # (ci.yml: `pip install "${WHEEL}[dev]" pytest-split`), which imports
+    # well beyond the base package -- proxy server deps for handler tests,
+    # plus numpy/openai/tiktoken/rich/opentelemetry-sdk used pervasively
+    # across individual test modules regardless of which extra "owns" the
+    # feature under test.
+    "cassandra-ai[proxy]",
+    "numpy>=1.24",
+    "openai>=1.0",
+    "tiktoken>=0.7",
+    "rich>=13.0",
+    "opentelemetry-sdk>=1.20",
+    "anyio>=4.0",
 ]
 all = [
     "cassandra-ai[proxy,ml,langchain,agno,strands,evals]",
