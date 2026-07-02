@@ -331,7 +331,7 @@ landed; zero `PR-I*` markers anywhere in code):
 | I6 | Make `make test-parity` a per-PR CI gate (currently nightly, `continue-on-error`) | Low | PR-I5 | No |
 | I7 | Cache hot zone non-mutation tests (system/tools/frozen messages byte-equal under compression) | Low | PR-B2 | **Done** (2026-07-02) |
 | I8 | Tool-definition byte-stability golden-file snapshots | Low | PR-B7 | **Done** (2026-07-02) |
-| I9 | Cache-hit-rate Prometheus alarm | Low | PR-G3 | **Yes** — `proxy_cache_hit_rate_per_session` confirmed to exist |
+| I9 | Cache-hit-rate Prometheus alarm | Low | PR-G3 | **Done** (2026-07-02) |
 | I10 | Replace fake RTK shim in wrap E2E with real RTK | Low | none | **Done** (2026-07-02) |
 
 **PR-I10 landed (2026-07-02)**, verified green in real CI (`docker-wrap-e2e`
@@ -401,13 +401,23 @@ generated cases each — a genuine, positive signal about the actual
 correctness of the live-zone dispatcher, not just documentation of
 intent.
 
-Remaining unblocked, low-risk Phase I work: **I2** (SSE fuzz fixtures)
-and **I9** (cache-hit-rate Prometheus alarm — confirmed unblocked once
-G was verified). I4 (the shadow test that actually gates H1) is likely
-realistic to attempt now that Phase F's fingerprint-surface gaps (raw
-OAuth token storage, unconditional X-Forwarded-*) are fixed — it was
-specifically those gaps that made an OAuth/Subscription-safety shadow
-test premature before.
+**PR-I9 landed (2026-07-02)**, verified green in real CI — and not just
+a local YAML parse: added a new `promtool-check` job to `ci.yml`
+(gated on `docs/operations/prometheus_rules.yaml` changing) that
+downloads the latest `promtool` release fresh each run and actually
+validates the rule; it reported `SUCCESS: 1 rules found` on this push.
+Added `docs/operations/prometheus_rules.yaml` (a `histogram_quantile`
+alert comparing today's rolling 15m p50 against the same window 24h
+ago via `offset 1d`, per `provider`) and `docs/operations/runbook.md`
+(triage steps ranked by likelihood, tying back to the specific
+REALIGNMENT phases most likely to cause a drift).
+
+Remaining unblocked, low-risk Phase I work: **I2** (SSE fuzz fixtures).
+I4 (the shadow test that actually gates H1) is likely realistic to
+attempt now that Phase F's fingerprint-surface gaps (raw OAuth token
+storage, unconditional X-Forwarded-*) are fixed — it was specifically
+those gaps that made an OAuth/Subscription-safety shadow test premature
+before. I5/I6 remain blocked on Phase B3's CodeCompressor gap.
 
 [12-decisions-needed.md](REALIGNMENT/12-decisions-needed.md) lists 15
 decisions the plan originally called blocking for Phase A (ICM deletion
