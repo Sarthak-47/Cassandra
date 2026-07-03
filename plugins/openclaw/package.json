@@ -1,6 +1,6 @@
 {
   "name": "cassandra-openclaw",
-  "version": "0.27.0",
+  "version": "0.2.0",
   "description": "Cassandra context compression plugin for OpenClaw — 70-90% token savings with zero LLM calls",
   "type": "module",
   "main": "./dist/index.js",
